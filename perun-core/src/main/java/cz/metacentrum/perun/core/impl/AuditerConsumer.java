@@ -60,6 +60,18 @@ public class AuditerConsumer {
     try {
       this.lastProcessedId = jdbc.queryForInt("select last_processed_id from auditer_consumers where name=?", consumerName);
     } catch(EmptyResultDataAccessException ex) {
+      
+      try {
+        String dbType = Utils.getPropertyFromConfiguration("perun.perun.db.type");
+        if(!dbType.equals("master")) {
+          log.debug("DB-Slave: This machine is probably slave so can't set lastProcessedId if is not in DB.");
+          return;
+        }
+      } catch (Exception e) {
+        //If exists some problem with property file, do like this is master, only log it
+        log.error("Property file reading perun.perun.db.type error.", e);
+      }
+      
       //listenerName doesn't have record in auditer_consumers 
       try {
         // New listener, set the lastProcessedId to the latest one
@@ -71,6 +83,7 @@ public class AuditerConsumer {
       } catch(Exception e) {
         throw new InternalErrorException(e);
       }
+      
     } catch(Exception ex) {
       throw new InternalErrorException(ex);
     }

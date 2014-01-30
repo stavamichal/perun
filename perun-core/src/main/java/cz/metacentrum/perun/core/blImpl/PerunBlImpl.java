@@ -45,6 +45,7 @@ import cz.metacentrum.perun.core.bl.UsersManagerBl;
 import cz.metacentrum.perun.core.bl.VosManagerBl;
 import cz.metacentrum.perun.core.impl.Auditer;
 import cz.metacentrum.perun.core.impl.PerunSessionImpl;
+import cz.metacentrum.perun.core.impl.Utils;
 
 /**
  * Implementation of Perun.
@@ -90,7 +91,15 @@ public class PerunBlImpl implements PerunBl {
 
     }
 
-    public PerunSession getPerunSession(PerunPrincipal principal) throws InternalErrorException {
+    public PerunSession getPerunSession(PerunPrincipal principal) throws InternalErrorException {        
+        String dbType;
+        try {
+            dbType = Utils.getPropertyFromConfiguration("perun.perun.db.type");
+        } catch (Exception ex) {
+            log.error("DB-Slave: Problem with reading perun.perun.db.type from configuration file ", ex);
+            dbType = "master";
+        }
+        
         if (principal.getUser() == null &&
                 this.getUsersManagerBl() != null &&
                 !principal.getExtSourceType().equals(ExtSourcesManager.EXTSOURCE_INTERNAL) &&
@@ -105,11 +114,19 @@ public class PerunBlImpl implements PerunBl {
                 UserExtSource ues = this.getUsersManagerBl().getUserExtSourceByExtLogin(getPerunSession(), es, principal.getActor());
                 if (ues.getLoa() != principal.getExtSourceLoa()) {
                     ues.setLoa(principal.getExtSourceLoa());
-                    this.getUsersManagerBl().updateUserExtSource(getPerunSession(), ues);
+                    if(!dbType.equals("master")) {
+                        log.debug("DB-Slave: This machine is probably slave so can't write to DB. For this reason can't update users extsource.");
+                    } else {
+                        this.getUsersManagerBl().updateUserExtSource(getPerunSession(), ues);
+                    }
                 }
 
                 // Update last access for userExtSource
-                this.getUsersManagerBl().updateUserExtSourceLastAccess(getPerunSession(), ues);
+                if(!dbType.equals("master")) {
+                    log.debug("DB-Slave: This machine is probably slave so can't write to DB. For this reason can't update users last access.");
+                } else {
+                    this.getUsersManagerBl().updateUserExtSourceLastAccess(getPerunSession(), ues);
+                }
 
             } catch (ExtSourceNotExistsException e) {
                 // OK - We don't know user yet
@@ -119,6 +136,7 @@ public class PerunBlImpl implements PerunBl {
                 // OK - We don't know user yet
             }
         }
+        
         return new PerunSessionImpl(this, principal);
     }
 

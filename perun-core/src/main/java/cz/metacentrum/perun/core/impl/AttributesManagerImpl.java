@@ -4318,8 +4318,22 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
       attr.setFriendlyName("synchronizationInterval");
       attributes.add(attr);
       
+      String dbType;
+      try {
+          dbType = Utils.getPropertyFromConfiguration("perun.perun.db.type");
+      } catch (Exception ex) {
+          log.error("DB-Slave: Problem with reading perun.perun.db.type from configuration file ", ex);
+          dbType = "master";
+      }
+      
       for(AttributeDefinition attribute : attributes) {
-        if(!checkAttributeExistsForInitialize(attribute)) createAttributeExistsForInitialize(attribute);
+        if(!checkAttributeExistsForInitialize(attribute)) {
+            if(!dbType.equals("master")) {
+                log.debug("DB-Slave: This machine is probably slave and for this reason can't create core attributeDef " + attribute + " in DB.");
+            } else {
+                createAttributeExistsForInitialize(attribute);
+            }
+        }
       }
       log.debug("AttributesManagerImpl initialize ended.");
     }

@@ -9,6 +9,7 @@ import cz.metacentrum.perun.cabinet.dao.IPublicationSystemDao;
 import cz.metacentrum.perun.cabinet.model.PublicationSystem;
 import cz.metacentrum.perun.cabinet.service.CabinetException;
 import cz.metacentrum.perun.cabinet.service.IPublicationSystemService;
+import cz.metacentrum.perun.core.impl.Utils;
 
 /**
  * Class for handling PublicationSystem entity in Cabinet.
@@ -67,8 +68,21 @@ public class PublicationSystemServiceImpl implements IPublicationSystemService {
 		example.setFriendlyName("INTERNAL");
 		List<PublicationSystem> list = publicationSystemDao.findPublicationSystemsByFilter(example);
 		
+                //Test if this DB is slave or master
+                String dbType;
+                try {
+                    dbType = Utils.getPropertyFromConfiguration("perun.perun.db.type");
+                } catch (Exception ex) {
+                    log.error("DB-Slave: Problem with reading perun.perun.db.type from configuration file ", ex);
+                    dbType = "master";
+                }
+                
+                
 		// not present, creates one
-		if (list.isEmpty()) {
+                if (list.isEmpty()) {
+                    if(!dbType.equals("master")) {
+                        log.debug("DB-Slave: This machine is probably slave and for this reason can't create publication system for cabinet in DB.");
+                    } else {
 			PublicationSystem record = new PublicationSystem();
 			record.setFriendlyName("INTERNAL");
 			record.setLoginNamespace("empty");
@@ -77,6 +91,7 @@ public class PublicationSystemServiceImpl implements IPublicationSystemService {
 			record.setPassword(null);
 			record.setUsername(null);
 			publicationSystemDao.createPublicationSystem(record);
+                    }
 		}
 		
 		// more then one is present - throw exception (not sure which delete) ?

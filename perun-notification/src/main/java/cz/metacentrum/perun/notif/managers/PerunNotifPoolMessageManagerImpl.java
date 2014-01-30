@@ -7,6 +7,7 @@ import cz.metacentrum.perun.core.api.PerunPrincipal;
 import cz.metacentrum.perun.core.api.PerunSession;
 import cz.metacentrum.perun.core.api.exceptions.InternalErrorException;
 import cz.metacentrum.perun.core.bl.PerunBl;
+import cz.metacentrum.perun.core.impl.Utils;
 import cz.metacentrum.perun.notif.dao.PerunNotifPoolMessageDao;
 import cz.metacentrum.perun.notif.dto.PoolMessage;
 import cz.metacentrum.perun.notif.entities.PerunNotifAuditMessage;
@@ -52,9 +53,21 @@ public class PerunNotifPoolMessageManagerImpl implements PerunNotifPoolMessageMa
 	@SuppressWarnings("unused")
 	@PostConstruct
 	private void init() throws Exception {
-		
-		perunNotifPoolMessageDao.setAllCreatedToNow();
-        this.session = perun.getPerunSession(new PerunPrincipal("perunNotifications", ExtSourcesManager.EXTSOURCE_INTERNAL, ExtSourcesManager.EXTSOURCE_INTERNAL));
+            String dbType;
+            try {
+                dbType = Utils.getPropertyFromConfiguration("perun.perun.db.type");
+            } catch (Exception ex) {
+                dbType = "master";
+                //TODO: need to log it there
+            }
+            
+            if (!dbType.equals("master")) {
+                //TODO: need to log it there
+            } else {
+                perunNotifPoolMessageDao.setAllCreatedToNow();
+            }
+        
+            this.session = perun.getPerunSession(new PerunPrincipal("perunNotifications", ExtSourcesManager.EXTSOURCE_INTERNAL, ExtSourcesManager.EXTSOURCE_INTERNAL));
 	}
 
 	public void savePerunNotifPoolMessages(List<PerunNotifPoolMessage> poolMessages) throws InternalErrorException {

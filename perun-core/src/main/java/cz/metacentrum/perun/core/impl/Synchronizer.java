@@ -49,6 +49,16 @@ public class Synchronizer {
   }
 
   public void synchronizeGroups() {
+    try {
+        String dbType = Utils.getPropertyFromConfiguration("perun.perun.db.type");
+        if(!dbType.equals("master")) {
+          log.debug("DB-Slave: This machine is probably slave so can't synchronize groups.");
+          return;
+        }
+    } catch (Exception ex) {
+        //If exists some problem with property file, do like this is master, only log it
+        log.error("Property file reading perun.perun.db.type error.", ex);
+    }
     if (synchronizeGroupsRunning.compareAndSet(false, true)) {
       try {
         log.debug("Synchronizer starting synchronizing the groups");
@@ -69,6 +79,16 @@ public class Synchronizer {
    * Iterate through all VALID members and check whether they are still in valid period.
    */
   public void checkMembersState() {
+          try {
+            String dbType = Utils.getPropertyFromConfiguration("perun.perun.db.type");
+            if(!dbType.equals("master")) {
+              log.debug("DB-Slave: This machine is probably slave so can't valid members.");
+              return;
+            }
+          } catch (Exception ex) {
+            //If exists some problem with property file, do like this is master, only log it
+            log.error("Property file reading perun.perun.db.type error.", ex);
+          }
 	  Date now = new Date();
 
 	  // Get all VO's

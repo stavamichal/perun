@@ -131,6 +131,7 @@ public class AuthzResolverImpl implements AuthzResolverImplApi {
     return authzRoles;
   }
   
+  //?
   public void initialize() throws InternalErrorException {
     
     // Check if all roles defined in class Role exists in the DB
@@ -138,7 +139,21 @@ public class AuthzResolverImpl implements AuthzResolverImplApi {
       try {
         if (0 == jdbc.queryForInt("select count(*) from roles where name=?", role.getRoleName())) {
           int newId = Utils.getNewId(jdbc, "roles_id_seq");
+          
+          //If this is not master (is probably slave), never run tests!
+          String dbType;
+          try {
+              dbType = Utils.getPropertyFromConfiguration("perun.perun.db.type");
+          } catch (Exception ex) {
+              log.error("DB-Slave: Problem with reading perun.perun.db.type from configuration file ", ex);
+              dbType = "master";
+          }
+          if(!dbType.equals("master")) {
+            log.debug("DB-Slave: Roles can't be inserted manualy because this server is slave and can't write to the database.");
+            return;
+          } 
           jdbc.update("insert into roles (id, name) values (?,?)", newId, role.getRoleName());
+          
         }
       } catch (RuntimeException e) {
         throw new InternalErrorException(e);

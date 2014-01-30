@@ -187,80 +187,92 @@ public class RegistrarManagerImpl implements RegistrarManager {
         this.usersManager = perun.getUsersManager();
         this.vosManager = perun.getVosManager();
 
-        // check necessary attributes
+        //Test if this DB is slave or master
+        String dbType;
         try {
-            attrManager.getAttributeDefinition(registrarSession, URN_VO_FROM_EMAIL);
-        } catch (AttributeNotExistsException ex) {
-            // create attr if not exists
-            AttributeDefinition attrDef = new AttributeDefinition();
-            attrDef.setDisplayName(DISPLAY_NAME_VO_FROM_EMAIL);
-            attrDef.setFriendlyName(FRIENDLY_NAME_VO_FROM_EMAIL);
-            attrDef.setNamespace(NAMESPACE_VO_FROM_EMAIL);
-            attrDef.setDescription("Email address used as \"from\" in mail notifications.");
-            attrDef.setType(String.class.getName());
-            attrManager.createAttribute(registrarSession, attrDef);
+            dbType = Utils.getPropertyFromConfiguration("perun.perun.db.type");
+        } catch (Exception ex) {
+            log.error("DB-Slave: Problem with reading perun.perun.db.type from configuration file ", ex);
+            dbType = "master";
         }
-        try {
-            attrManager.getAttributeDefinition(registrarSession, URN_VO_TO_EMAIL);
-        } catch (AttributeNotExistsException ex) {
-            // create attr if not exists
-            AttributeDefinition attrDef = new AttributeDefinition();
-            attrDef.setDisplayName(DISPLAY_NAME_VO_TO_EMAIL);
-            attrDef.setFriendlyName(FRIENDLY_NAME_VO_TO_EMAIL);
-            attrDef.setNamespace(NAMESPACE_VO_TO_EMAIL);
-            attrDef.setDescription("Email addresses (of VO administrators) used as \"to\" in mail notifications.");
-            attrDef.setType("java.util.ArrayList");
-            attrManager.createAttribute(registrarSession, attrDef);
+        
+        if(!dbType.equals("master")) {
+            log.debug("DB-Slave: This machine is probably slave and for this reason can't create necessary attributes for registrar in DB.");
+        } else {
+            // check necessary attributes
+            try {
+                attrManager.getAttributeDefinition(registrarSession, URN_VO_FROM_EMAIL);
+            } catch (AttributeNotExistsException ex) {
+                // create attr if not exists
+                AttributeDefinition attrDef = new AttributeDefinition();
+                attrDef.setDisplayName(DISPLAY_NAME_VO_FROM_EMAIL);
+                attrDef.setFriendlyName(FRIENDLY_NAME_VO_FROM_EMAIL);
+                attrDef.setNamespace(NAMESPACE_VO_FROM_EMAIL);
+                attrDef.setDescription("Email address used as \"from\" in mail notifications.");
+                attrDef.setType(String.class.getName());
+                attrManager.createAttribute(registrarSession, attrDef);
+            }
+            try {
+                attrManager.getAttributeDefinition(registrarSession, URN_VO_TO_EMAIL);
+            } catch (AttributeNotExistsException ex) {
+                // create attr if not exists
+                AttributeDefinition attrDef = new AttributeDefinition();
+                attrDef.setDisplayName(DISPLAY_NAME_VO_TO_EMAIL);
+                attrDef.setFriendlyName(FRIENDLY_NAME_VO_TO_EMAIL);
+                attrDef.setNamespace(NAMESPACE_VO_TO_EMAIL);
+                attrDef.setDescription("Email addresses (of VO administrators) used as \"to\" in mail notifications.");
+                attrDef.setType("java.util.ArrayList");
+                attrManager.createAttribute(registrarSession, attrDef);
+            }
+            try {
+                attrManager.getAttributeDefinition(registrarSession, URN_GROUP_TO_EMAIL);
+            } catch (AttributeNotExistsException ex) {
+                // create attr if not exists
+                AttributeDefinition attrDef = new AttributeDefinition();
+                attrDef.setDisplayName(DISPLAY_NAME_GROUP_TO_EMAIL);
+                attrDef.setFriendlyName(FRIENDLY_NAME_GROUP_TO_EMAIL);
+                attrDef.setNamespace(NAMESPACE_GROUP_TO_EMAIL);
+                attrDef.setDescription("Email addresses (of Group administrators) used as \"to\" in mail notifications.");
+                attrDef.setType("java.util.ArrayList");
+                attrManager.createAttribute(registrarSession, attrDef);
+            }
+            try {
+                attrManager.getAttributeDefinition(registrarSession, URN_GROUP_FROM_EMAIL);
+            } catch (AttributeNotExistsException ex) {
+                // create attr if not exists
+                AttributeDefinition attrDef = new AttributeDefinition();
+                attrDef.setDisplayName(DISPLAY_NAME_GROUP_FROM_EMAIL);
+                attrDef.setFriendlyName(FRIENDLY_NAME_GROUP_FROM_EMAIL);
+                attrDef.setNamespace(NAMESPACE_GROUP_FROM_EMAIL);
+                attrDef.setDescription("Email address used as \"from\" in mail notifications.");
+                attrDef.setType(String.class.getName());
+                attrManager.createAttribute(registrarSession, attrDef);
+            }
+            try {
+                attrManager.getAttributeDefinition(registrarSession, URN_VO_LANGUAGE_EMAIL);
+            } catch (AttributeNotExistsException ex) {
+                // create attr if not exists
+                AttributeDefinition attrDef = new AttributeDefinition();
+                attrDef.setDisplayName(DISPLAY_NAME_VO_LANGUAGE_EMAIL);
+                attrDef.setFriendlyName(FRIENDLY_NAME_VO_LANGUAGE_EMAIL);
+                attrDef.setNamespace(NAMESPACE_VO_LANGUAGE_EMAIL);
+                attrDef.setDescription("Default language used for application notifications to VO administrators.");
+                attrDef.setType(String.class.getName());
+                attrManager.createAttribute(registrarSession, attrDef);
+            }
+            try {
+                attrManager.getAttributeDefinition(registrarSession, URN_GROUP_LANGUAGE_EMAIL);
+            } catch (AttributeNotExistsException ex) {
+                // create attr if not exists
+                AttributeDefinition attrDef = new AttributeDefinition();
+                attrDef.setDisplayName(DISPLAY_NAME_GROUP_LANGUAGE_EMAIL);
+                attrDef.setFriendlyName(FRIENDLY_NAME_GROUP_LANGUAGE_EMAIL);
+                attrDef.setNamespace(NAMESPACE_GROUP_LANGUAGE_EMAIL);
+                attrDef.setDescription("Default language used for application notifications to Group administrators.");
+                attrDef.setType(String.class.getName());
+                attrManager.createAttribute(registrarSession, attrDef);
+            }
         }
-        try {
-            attrManager.getAttributeDefinition(registrarSession, URN_GROUP_TO_EMAIL);
-        } catch (AttributeNotExistsException ex) {
-            // create attr if not exists
-            AttributeDefinition attrDef = new AttributeDefinition();
-            attrDef.setDisplayName(DISPLAY_NAME_GROUP_TO_EMAIL);
-            attrDef.setFriendlyName(FRIENDLY_NAME_GROUP_TO_EMAIL);
-            attrDef.setNamespace(NAMESPACE_GROUP_TO_EMAIL);
-            attrDef.setDescription("Email addresses (of Group administrators) used as \"to\" in mail notifications.");
-            attrDef.setType("java.util.ArrayList");
-            attrManager.createAttribute(registrarSession, attrDef);
-        }
-        try {
-            attrManager.getAttributeDefinition(registrarSession, URN_GROUP_FROM_EMAIL);
-        } catch (AttributeNotExistsException ex) {
-            // create attr if not exists
-            AttributeDefinition attrDef = new AttributeDefinition();
-            attrDef.setDisplayName(DISPLAY_NAME_GROUP_FROM_EMAIL);
-            attrDef.setFriendlyName(FRIENDLY_NAME_GROUP_FROM_EMAIL);
-            attrDef.setNamespace(NAMESPACE_GROUP_FROM_EMAIL);
-            attrDef.setDescription("Email address used as \"from\" in mail notifications.");
-            attrDef.setType(String.class.getName());
-            attrManager.createAttribute(registrarSession, attrDef);
-        }
-        try {
-            attrManager.getAttributeDefinition(registrarSession, URN_VO_LANGUAGE_EMAIL);
-        } catch (AttributeNotExistsException ex) {
-            // create attr if not exists
-            AttributeDefinition attrDef = new AttributeDefinition();
-            attrDef.setDisplayName(DISPLAY_NAME_VO_LANGUAGE_EMAIL);
-            attrDef.setFriendlyName(FRIENDLY_NAME_VO_LANGUAGE_EMAIL);
-            attrDef.setNamespace(NAMESPACE_VO_LANGUAGE_EMAIL);
-            attrDef.setDescription("Default language used for application notifications to VO administrators.");
-            attrDef.setType(String.class.getName());
-            attrManager.createAttribute(registrarSession, attrDef);
-        }
-        try {
-            attrManager.getAttributeDefinition(registrarSession, URN_GROUP_LANGUAGE_EMAIL);
-        } catch (AttributeNotExistsException ex) {
-            // create attr if not exists
-            AttributeDefinition attrDef = new AttributeDefinition();
-            attrDef.setDisplayName(DISPLAY_NAME_GROUP_LANGUAGE_EMAIL);
-            attrDef.setFriendlyName(FRIENDLY_NAME_GROUP_LANGUAGE_EMAIL);
-            attrDef.setNamespace(NAMESPACE_GROUP_LANGUAGE_EMAIL);
-            attrDef.setDescription("Default language used for application notifications to Group administrators.");
-            attrDef.setType(String.class.getName());
-            attrManager.createAttribute(registrarSession, attrDef);
-        }
-
         // set mailing type
         useMailManager = Boolean.parseBoolean(mailManager.getPropertyFromConfiguration("useMailManager"));
 

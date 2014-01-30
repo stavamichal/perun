@@ -25,6 +25,7 @@ import cz.metacentrum.perun.core.api.exceptions.AttributeNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.PerunException;
 import cz.metacentrum.perun.core.api.exceptions.UserNotExistsException;
 import cz.metacentrum.perun.core.bl.PerunBl;
+import cz.metacentrum.perun.core.impl.Utils;
 
 /**
  * Class which provides connection to the rest of Perun.
@@ -189,48 +190,61 @@ public class PerunServiceImpl implements IPerunService {
 		final PerunPrincipal pp = new PerunPrincipal("perunCabinet", ExtSourcesManager.EXTSOURCE_INTERNAL, ExtSourcesManager.EXTSOURCE_INTERNAL);
 		cabinetSession = perun.getPerunSession(pp);
 		
-		AttributeDefinition attrDef;
-		try {
-			// check if attr exists
-			attrDef = perun.getAttributesManager().getAttributeDefinition(cabinetSession,ATTR_COEF_NAMESPACE+":"+ATTR_COEF_FRIENDLY_NAME);
-		} catch (AttributeNotExistsException e) {
-			// if not - create it
-			log.warn("Attribute "+ ATTR_COEF_NAMESPACE+":"+ATTR_COEF_FRIENDLY_NAME +" does not exist in Perun. Attempting to create it.");
-			AttributeDefinition attributeDefinition = new AttributeDefinition();
-            attributeDefinition.setDisplayName(ATTR_COEF_DISPLAY_NAME);
-            attributeDefinition.setDescription(ATTR_COEF_DESCRIPTION);
-			attributeDefinition.setFriendlyName(ATTR_COEF_FRIENDLY_NAME);
-			attributeDefinition.setNamespace(ATTR_COEF_NAMESPACE);
-			attributeDefinition.setType(ATTR_COEF_TYPE);
-			try {
-				attrDef = perun.getAttributesManager().createAttribute(cabinetSession, attributeDefinition);
-			} catch (PerunException pe) {
-				log.error("Failed to create attribute "+ ATTR_COEF_NAMESPACE+":"+ATTR_COEF_FRIENDLY_NAME +" in Perun.");
-				throw new CabinetException("Failed to create attribute "+ ATTR_COEF_NAMESPACE+":"+ATTR_COEF_FRIENDLY_NAME +" in Perun.", ErrorCodes.PERUN_EXCEPTION, pe);
-			}
-			log.debug("Attribute "+ ATTR_COEF_NAMESPACE+":"+ATTR_COEF_FRIENDLY_NAME +" successfully created.");
-		}
-		try {
-			// check if attr exists
-			attrDef = null;
-			attrDef = perun.getAttributesManager().getAttributeDefinition(cabinetSession,ATTR_PUBS_NAMESPACE+":"+ATTR_PUBS_FRIENDLY_NAME);
-		} catch (AttributeNotExistsException e) {
-			// if not - create it
-			log.warn("Attribute "+ ATTR_PUBS_NAMESPACE+":"+ATTR_PUBS_FRIENDLY_NAME +" does not exist in Perun. Attempting to create it.");
-			AttributeDefinition attributeDefinition = new AttributeDefinition();
-            attributeDefinition.setDisplayName(ATTR_PUBS_DISPLAY_NAME);
-            attributeDefinition.setDescription(ATTR_PUBS_DESCRIPTION);
-			attributeDefinition.setFriendlyName(ATTR_PUBS_FRIENDLY_NAME);
-			attributeDefinition.setNamespace(ATTR_PUBS_NAMESPACE);
-			attributeDefinition.setType(ATTR_PUBS_TYPE);
-			try {
-				attrDef = perun.getAttributesManager().createAttribute(cabinetSession, attributeDefinition);
-			} catch (PerunException pe) {
-				log.error("Failed to create attribute "+ ATTR_PUBS_NAMESPACE+":"+ATTR_PUBS_FRIENDLY_NAME +" in Perun.");
-				throw new CabinetException("Failed to create attribute "+ ATTR_PUBS_NAMESPACE+":"+ATTR_PUBS_FRIENDLY_NAME +" in Perun.", ErrorCodes.PERUN_EXCEPTION, pe);
-			}
-			log.debug("Attribute "+ ATTR_PUBS_NAMESPACE+":"+ATTR_PUBS_FRIENDLY_NAME +" successfully created.");
-		}
+                //Test if this DB is slave or master
+                String dbType;
+                try {
+                    dbType = Utils.getPropertyFromConfiguration("perun.perun.db.type");
+                } catch (Exception ex) {
+                    log.error("DB-Slave: Problem with reading perun.perun.db.type from configuration file ", ex);
+                    dbType = "master";
+                }
+                
+                if(!dbType.equals("master")) {
+                    log.debug("DB-Slave: This machine is probably slave and for this reason can't create necessary attributes for registrar in DB.");
+                } else {
+                    AttributeDefinition attrDef;
+                    try {
+                            // check if attr exists
+                            attrDef = perun.getAttributesManager().getAttributeDefinition(cabinetSession,ATTR_COEF_NAMESPACE+":"+ATTR_COEF_FRIENDLY_NAME);
+                    } catch (AttributeNotExistsException e) {
+                            // if not - create it
+                            log.warn("Attribute "+ ATTR_COEF_NAMESPACE+":"+ATTR_COEF_FRIENDLY_NAME +" does not exist in Perun. Attempting to create it.");
+                            AttributeDefinition attributeDefinition = new AttributeDefinition();
+                            attributeDefinition.setDisplayName(ATTR_COEF_DISPLAY_NAME);
+                            attributeDefinition.setDescription(ATTR_COEF_DESCRIPTION);
+                            attributeDefinition.setFriendlyName(ATTR_COEF_FRIENDLY_NAME);
+                            attributeDefinition.setNamespace(ATTR_COEF_NAMESPACE);
+                            attributeDefinition.setType(ATTR_COEF_TYPE);
+                            try {
+                                    attrDef = perun.getAttributesManager().createAttribute(cabinetSession, attributeDefinition);
+                            } catch (PerunException pe) {
+                                    log.error("Failed to create attribute "+ ATTR_COEF_NAMESPACE+":"+ATTR_COEF_FRIENDLY_NAME +" in Perun.");
+                                    throw new CabinetException("Failed to create attribute "+ ATTR_COEF_NAMESPACE+":"+ATTR_COEF_FRIENDLY_NAME +" in Perun.", ErrorCodes.PERUN_EXCEPTION, pe);
+                            }
+                            log.debug("Attribute "+ ATTR_COEF_NAMESPACE+":"+ATTR_COEF_FRIENDLY_NAME +" successfully created.");
+                    }
+                    try {
+                            // check if attr exists
+                            attrDef = null;
+                            attrDef = perun.getAttributesManager().getAttributeDefinition(cabinetSession,ATTR_PUBS_NAMESPACE+":"+ATTR_PUBS_FRIENDLY_NAME);
+                    } catch (AttributeNotExistsException e) {
+                            // if not - create it
+                            log.warn("Attribute "+ ATTR_PUBS_NAMESPACE+":"+ATTR_PUBS_FRIENDLY_NAME +" does not exist in Perun. Attempting to create it.");
+                            AttributeDefinition attributeDefinition = new AttributeDefinition();
+                            attributeDefinition.setDisplayName(ATTR_PUBS_DISPLAY_NAME);
+                            attributeDefinition.setDescription(ATTR_PUBS_DESCRIPTION);
+                            attributeDefinition.setFriendlyName(ATTR_PUBS_FRIENDLY_NAME);
+                            attributeDefinition.setNamespace(ATTR_PUBS_NAMESPACE);
+                            attributeDefinition.setType(ATTR_PUBS_TYPE);
+                            try {
+                                    attrDef = perun.getAttributesManager().createAttribute(cabinetSession, attributeDefinition);
+                            } catch (PerunException pe) {
+                                    log.error("Failed to create attribute "+ ATTR_PUBS_NAMESPACE+":"+ATTR_PUBS_FRIENDLY_NAME +" in Perun.");
+                                    throw new CabinetException("Failed to create attribute "+ ATTR_PUBS_NAMESPACE+":"+ATTR_PUBS_FRIENDLY_NAME +" in Perun.", ErrorCodes.PERUN_EXCEPTION, pe);
+                            }
+                            log.debug("Attribute "+ ATTR_PUBS_NAMESPACE+":"+ATTR_PUBS_FRIENDLY_NAME +" successfully created.");
+                    }
+                }
 	}
 
 }

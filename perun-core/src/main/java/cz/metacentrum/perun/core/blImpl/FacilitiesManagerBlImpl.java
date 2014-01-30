@@ -81,7 +81,6 @@ public class FacilitiesManagerBlImpl implements FacilitiesManagerBl {
 
   private final FacilitiesManagerImplApi facilitiesManagerImpl;
   private PerunBl perunBl;
-  private AtomicBoolean initialized = new AtomicBoolean(false);
 
   public FacilitiesManagerBlImpl(FacilitiesManagerImplApi facilitiesManagerImpl) {
     this.facilitiesManagerImpl = facilitiesManagerImpl;
@@ -710,7 +709,7 @@ public class FacilitiesManagerBlImpl implements FacilitiesManagerBl {
   public List<Facility> getFacilitiesWhereUserIsAdmin(PerunSession sess, User user) throws InternalErrorException {
 	  return  facilitiesManagerImpl.getFacilitiesWhereUserIsAdmin(sess, user);
   }
-
+  
   public Host addHost(PerunSession sess, Host host, Facility facility) throws InternalErrorException {
     getPerunBl().getAuditer().log(sess, "{} added to {}.", host, facility);
     return facilitiesManagerImpl.addHost(sess, host, facility);

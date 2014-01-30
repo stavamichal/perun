@@ -68,7 +68,14 @@ public class Main {
         usersLdifToWriter();
         int LastMessageAfterInitializingData = perun.getAuditer().getLastMessageId();
         System.err.println("Last message id after initializing: " + LastMessageAfterInitializingData + '\n');
-        perun.getAuditer().setLastProcessedId("ldapcConsumer", LastMessageAfterInitializingData);
+        
+        //If this is not master (is probably slave), never run automatic settings of lastProcessedId
+        String dbType = Utils.getPropertyFromConfiguration("perun.perun.db.type");
+        if(!dbType.equals("master")) {
+            System.err.println("This machine is probably Slave so can't set lastProcessedId from here. Need to set manualy.");
+        } else {
+            perun.getAuditer().setLastProcessedId("ldapcConsumer", LastMessageAfterInitializingData);
+        }
     }
 
     public static void main(String[] args) throws Exception {
