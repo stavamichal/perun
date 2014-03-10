@@ -80,28 +80,20 @@ public class urn_perun_user_facility_attribute_def_virt_defaultUnixGID extends F
                     }
                 }
             }
-            //third phase: Preffered unix GID is not on the facility and it's choosed from resource with minimal id and has set unix GID
-            Resource resourceWithMinId = null;
-            for(Resource resource: resources) {
-               Attribute uGIDAttrForResource = sess.getPerunBl().getAttributesManagerBl().getAttribute(sess, resource, AttributesManager.NS_RESOURCE_ATTR_DEF + ":unixGID-namespace:" + namespace);
-               if(uGIDAttrForResource.getValue() != null) {
-                   if(resourceWithMinId == null || (resource.getId() < resourceWithMinId.getId())) resourceWithMinId = resource;
-               }
+
+            //third phase: Preffered unix GID is not on the facility and it is choosen basicDefaultGID
+            Attribute basicGid = sess.getPerunBl().getAttributesManagerBl().getAttribute(sess, facility, user, AttributesManager.NS_USER_FACILITY_ATTR_DEF + "basicDefaultGid");
+            if (basicGid.getValue() == null) {
+                basicGid = sess.getPerunBl().getAttributesManagerBl().fillAttribute(sess, facility, user, basicGid);
             }
-           
-            if(resourceWithMinId != null) {
-               Attribute uGIDAttrForResource = sess.getPerunBl().getAttributesManagerBl().getAttribute(sess, resourceWithMinId, AttributesManager.NS_RESOURCE_ATTR_DEF + ":unixGID-namespace:" + namespace);
-               Utils.copyAttributeToVirtualAttributeWithValue(uGIDAttrForResource, attr);
-               return attr;
-            }
+            return basicGid;
+
 
         } catch (AttributeNotExistsException ex) {
             throw new InternalErrorException(ex);
         } catch (WrongAttributeAssignmentException ex) {
             throw new InternalErrorException(ex);
         }
-
-        return attr;
     }
 
     public boolean setAttributeValue(PerunSessionImpl sess, Facility facility, User user, Attribute attribute) throws InternalErrorException, WrongReferenceAttributeValueException {
@@ -125,6 +117,7 @@ public class urn_perun_user_facility_attribute_def_virt_defaultUnixGID extends F
         strongDependencies.add(AttributesManager.NS_FACILITY_ATTR_DEF + ":unixGID-namespace");
         strongDependencies.add(AttributesManager.NS_USER_FACILITY_ATTR_DEF + ":preferredDefaultUnixGIDs-namespace:*");
         strongDependencies.add(AttributesManager.NS_RESOURCE_ATTR_DEF + ":unixGID-namespace:*");
+        strongDependencies.add(AttributesManager.NS_USER_FACILITY_ATTR_DEF + "basicDefaultGid");
         return strongDependencies;
     }
 

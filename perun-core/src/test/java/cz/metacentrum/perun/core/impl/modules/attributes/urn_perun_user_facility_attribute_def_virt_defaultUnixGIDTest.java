@@ -44,6 +44,7 @@ public class urn_perun_user_facility_attribute_def_virt_defaultUnixGIDTest {
     private static List<User> users;
     private static Member member;
     private static List<Member> members;
+    private static Attribute basicGid;
 
     @Before
     public void setUp() {
@@ -87,14 +88,16 @@ public class urn_perun_user_facility_attribute_def_virt_defaultUnixGIDTest {
         members = new ArrayList<>();
         members.add(member);
         
-        
+        basicGid = new Attribute();
+        basicGid.setValue(10);
     }
 
     @Test
     public void getAttributeValueTest() throws Exception {
         System.out.println("urn_perun_user_facility_attribute_def_virt_defaultUnixGid.GetAttributeValue()");
-
+        //phase one
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), any(User.class), eq(AttributesManager.NS_USER_FACILITY_ATTR_DEF + ":defaultUnixGID"))).thenReturn(defDefGIDAttr);
+        //phase two
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), eq(AttributesManager.NS_FACILITY_ATTR_DEF + ":unixGID-namespace")).getValue()).thenReturn(namespace);
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Resource.class), eq(AttributesManager.NS_RESOURCE_ATTR_DEF + ":unixGID-namespace:" + namespace))).thenReturn(resourceGIDListAttr);
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(User.class), eq(AttributesManager.NS_USER_ATTR_DEF + ":preferredDefaultUnixGIDs-namespace:" + namespace))).thenReturn(prefferedAttr);
@@ -107,9 +110,10 @@ public class urn_perun_user_facility_attribute_def_virt_defaultUnixGIDTest {
                 
         when(session.getPerunBl().getMembersManagerBl().getMembersByUser(any(PerunSessionImpl.class), any(User.class))).thenReturn(members);
         when(session.getPerunBl().getGroupsManagerBl().getGroupMembers(any(PerunSessionImpl.class), any(Group.class))).thenReturn(members);
-        
+        //phase three
+        when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), any(User.class) , eq(AttributesManager.NS_USER_FACILITY_ATTR_DEF + "basicDefaultGid"))).thenReturn(basicGid);
         Attribute testAttr = classInstance.getAttributeValue(session, facility, user, session.getPerunBl().getAttributesManagerBl().getAttributeDefinition(session, AttributesManager.NS_USER_FACILITY_ATTR_VIRT + ""));
-        assertEquals(resourceGIDListAttr, testAttr);
+        assertEquals(basicGid, testAttr);
 
     }
 
@@ -118,7 +122,9 @@ public class urn_perun_user_facility_attribute_def_virt_defaultUnixGIDTest {
         System.out.println("urn_perun_user_facility_attribute_def_virt_defaultUnixGid.getAttributeValueWhenDefaultUnixGidIsSetTest()");
 
         defDefGIDAttr.setValue(125);
+        // phase one
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), any(User.class), eq(AttributesManager.NS_USER_FACILITY_ATTR_DEF + ":defaultUnixGID"))).thenReturn(defDefGIDAttr);
+        //phase twho
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), eq(AttributesManager.NS_FACILITY_ATTR_DEF + ":unixGID-namespace")).getValue()).thenReturn(namespace);
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Resource.class), eq(AttributesManager.NS_RESOURCE_ATTR_DEF + ":unixGID-namespace:" + namespace))).thenReturn(resourceGIDListAttr);
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(User.class), eq(AttributesManager.NS_USER_ATTR_DEF + ":preferredDefaultUnixGIDs-namespace:" + namespace))).thenReturn(prefferedAttr);
@@ -131,6 +137,8 @@ public class urn_perun_user_facility_attribute_def_virt_defaultUnixGIDTest {
         when(session.getPerunBl().getMembersManagerBl().getMembersByUser(any(PerunSessionImpl.class), any(User.class))).thenReturn(members);
         when(session.getPerunBl().getGroupsManagerBl().getGroupMembers(any(PerunSessionImpl.class), any(Group.class))).thenReturn(members);
         
+        //phase three
+        when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), any(User.class) , eq(AttributesManager.NS_USER_FACILITY_ATTR_DEF + "basicDefaultGid"))).thenReturn(basicGid);
         Attribute testAttr = classInstance.getAttributeValue(session, facility, user, session.getPerunBl().getAttributesManagerBl().getAttributeDefinition(session, AttributesManager.NS_USER_FACILITY_ATTR_VIRT + ""));
         assertEquals(defDefGIDAttr, testAttr);
 
@@ -141,7 +149,9 @@ public class urn_perun_user_facility_attribute_def_virt_defaultUnixGIDTest {
         System.out.println("urn_perun_user_facility_attribute_def_virt_defaultUnixGid.getAttributeValueWhenDefaultUGIDIsSetWithoutPrefferedGID");
 
         defDefGIDAttr.setValue(125);
+        //phase one
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), any(User.class), eq(AttributesManager.NS_USER_FACILITY_ATTR_DEF + ":defaultUnixGID"))).thenReturn(defDefGIDAttr);
+        //phase two
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), eq(AttributesManager.NS_FACILITY_ATTR_DEF + ":unixGID-namespace")).getValue()).thenReturn(namespace);
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Resource.class), eq(AttributesManager.NS_RESOURCE_ATTR_DEF + ":unixGID-namespace:" + namespace))).thenReturn(resourceGIDListAttr);
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(User.class), eq(AttributesManager.NS_USER_ATTR_DEF + ":preferredDefaultUnixGIDs-namespace:" + namespace))).thenReturn(new Attribute());
@@ -153,7 +163,8 @@ public class urn_perun_user_facility_attribute_def_virt_defaultUnixGIDTest {
                 
         when(session.getPerunBl().getMembersManagerBl().getMembersByUser(any(PerunSessionImpl.class), any(User.class))).thenReturn(members);
         when(session.getPerunBl().getGroupsManagerBl().getGroupMembers(any(PerunSessionImpl.class), any(Group.class))).thenReturn(members);
-        
+        //phase three
+        when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), any(User.class) , eq(AttributesManager.NS_USER_FACILITY_ATTR_DEF + "basicDefaultGid"))).thenReturn(basicGid);
         Attribute testAttr = classInstance.getAttributeValue(session, facility, user, session.getPerunBl().getAttributesManagerBl().getAttributeDefinition(session, AttributesManager.NS_USER_FACILITY_ATTR_VIRT + ""));
         assertEquals(defDefGIDAttr, testAttr);
     }
@@ -161,8 +172,9 @@ public class urn_perun_user_facility_attribute_def_virt_defaultUnixGIDTest {
     @Test
     public void getAttributeValueWithoutPrefferedGID() throws Exception {
         System.out.println("urn_perun_user_facility_attribute_def_virt_defaultUnixGid.getAttributeValueWithoutPrefferedGID()");
-
+        //phase one
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), any(User.class), eq(AttributesManager.NS_USER_FACILITY_ATTR_DEF + ":defaultUnixGID"))).thenReturn(defDefGIDAttr);
+        //phase two
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), eq(AttributesManager.NS_FACILITY_ATTR_DEF + ":unixGID-namespace")).getValue()).thenReturn(namespace);
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Resource.class), eq(AttributesManager.NS_RESOURCE_ATTR_DEF + ":unixGID-namespace:" + namespace))).thenReturn(resourceGIDListAttr);
         when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(User.class), eq(AttributesManager.NS_USER_ATTR_DEF + ":preferredDefaultUnixGIDs-namespace:" + namespace))).thenReturn(new Attribute());
@@ -174,8 +186,9 @@ public class urn_perun_user_facility_attribute_def_virt_defaultUnixGIDTest {
         
         when(session.getPerunBl().getMembersManagerBl().getMembersByUser(any(PerunSessionImpl.class), any(User.class))).thenReturn(members);
         when(session.getPerunBl().getGroupsManagerBl().getGroupMembers(any(PerunSessionImpl.class), any(Group.class))).thenReturn(members);        
-        
+        //phase three
+        when(session.getPerunBl().getAttributesManagerBl().getAttribute(any(PerunSessionImpl.class), any(Facility.class), any(User.class) , eq(AttributesManager.NS_USER_FACILITY_ATTR_DEF + "basicDefaultGid"))).thenReturn(basicGid);
         Attribute testAttr = classInstance.getAttributeValue(session, facility, user, session.getPerunBl().getAttributesManagerBl().getAttributeDefinition(session, AttributesManager.NS_USER_FACILITY_ATTR_VIRT + ""));
-        assertEquals(resourceGIDListAttr, testAttr);
+        assertEquals(basicGid, testAttr);
     }
 }
