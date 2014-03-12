@@ -46,6 +46,7 @@ public class urn_perun_user_facility_attribute_def_def_basicDefaultGid extends F
         resourceGidAttribute.setValue(attribute.getValue());
         List<Resource> allowedResources = sess.getPerunBl().getUsersManagerBl().getAllowedResources(sess, facility, user);
         List<Resource> allowedResourcesWithSameGid = sess.getPerunBl().getResourcesManagerBl().getResourcesByAttribute(sess, resourceGidAttribute);
+        if (allowedResourcesWithSameGid.isEmpty()) throw new WrongAttributeValueException(attribute, user, "Resource with requiered group id doesnt exist");
         allowedResourcesWithSameGid.retainAll(allowedResources);
 
         if (!allowedResourcesWithSameGid.isEmpty()) {
@@ -54,7 +55,7 @@ public class urn_perun_user_facility_attribute_def_def_basicDefaultGid extends F
             if (allowedResources.isEmpty()) {
                 return; //user has no allowed resource on this facility
             } else {
-                throw new WrongAttributeValueException("Attribute has not value and useable resource exist");
+                throw new WrongAttributeValueException(attribute, user, "User has not access to requiered resource");
             }
 
         }

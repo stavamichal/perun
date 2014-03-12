@@ -1,0 +1,18 @@
+UD:D:basicDefaultGid
+	chování jako UD:D:DefaultGID
+	Fill z UF:D:defaultGid (stále funguje asi)
+	check z UF:D:defaulGID vyvrakovat věci pro resource. Skupiny nefungují.
+	nahradí third phase v UF:V:deafultGid
+    fill z virtuálu odstranit
+    přidat kontrolu na špatné hodnoty v basicu v checku
+    neodesílat basic ale překopírovat hodnotu
+	
+
+prefferedUnixGroupName-namespace
+	U:D:prefferedUnixGroupName-namespace
+		checkuje jmeno zdali je validní řetězec, neřeším rozsahy.
+		jmena v R:D:unixGroupName regex
+	nahradí GIDy za jména
+	UF:V:Gid ze jména získá gid
+	všechny v UF:V:gid kde se tahá gid se bude tahat jméno.
+	ve výsledku bude vyhazovat gid ne jméno.
