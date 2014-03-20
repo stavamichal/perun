@@ -45,13 +45,14 @@ public class urn_perun_user_facility_attribute_def_def_basicDefaultGid extends F
 
         resourceGidAttribute.setValue(attribute.getValue());
         List<Resource> allowedResources = sess.getPerunBl().getUsersManagerBl().getAllowedResources(sess, facility, user);
-        List<Resource> allowedResourcesWithSameGid = sess.getPerunBl().getResourcesManagerBl().getResourcesByAttribute(sess, resourceGidAttribute);
-        if (allowedResourcesWithSameGid.isEmpty() && allowedResources.isEmpty() && resourceGidAttribute.getValue() == null) return;
-        if (allowedResourcesWithSameGid.isEmpty() && resourceGidAttribute.getValue() != null) throw new WrongAttributeValueException(attribute, user, "Resource with requiered group id doesnt exist");
+        List<Resource> resourcesWithSameGid = sess.getPerunBl().getResourcesManagerBl().getResourcesByAttribute(sess, resourceGidAttribute);
+        if (resourcesWithSameGid.isEmpty() && allowedResources.isEmpty() && resourceGidAttribute.getValue() == null) return;
+        if (resourcesWithSameGid.isEmpty() && resourceGidAttribute.getValue() != null) throw new WrongAttributeValueException(attribute, user, facility, "Resource with requiered unix GID doesn't exist.");
         if (allowedResources.isEmpty()) throw new WrongAttributeValueException(attribute, user, "User has not access to requiered resource");
-        allowedResourcesWithSameGid.retainAll(allowedResources);
         
-        if (!allowedResourcesWithSameGid.isEmpty()) {
+        resourcesWithSameGid.retainAll(allowedResources);
+        
+        if (!resourcesWithSameGid.isEmpty()) {
             return; //We found at least one allowed resource with same gid as the user have => attribute is OK
         } else {
             throw new WrongAttributeValueException(attribute, user, "User has not access to resource with required group id");
@@ -67,7 +68,7 @@ public class urn_perun_user_facility_attribute_def_def_basicDefaultGid extends F
                 List<AttributeDefinition> resourceRequiredAttributesDefinitions = sess.getPerunBl().getAttributesManagerBl().getResourceRequiredAttributesDefinition(sess, resource);
 
                 //if this attribute is not required by the services on the resource, skip the resource
-                if (!resourceRequiredAttributesDefinitions.contains(new AttributeDefinition(attributeDefinition))) {
+                if (!resourceRequiredAttributesDefinitions.contains(attributeDefinition)) {
                     continue;
                 }
 
@@ -89,7 +90,6 @@ public class urn_perun_user_facility_attribute_def_def_basicDefaultGid extends F
         List<String> dependencies = new ArrayList<String>();
         dependencies.add(AttributesManager.NS_FACILITY_ATTR_DEF + ":unixGID-namespace");
         dependencies.add(AttributesManager.NS_RESOURCE_ATTR_DEF + ":unixGID-namespace" + ":*");
-        dependencies.add(AttributesManager.NS_RESOURCE_ATTR_VIRT + ":unixGID");
         return dependencies;
     }
 
@@ -98,7 +98,7 @@ public class urn_perun_user_facility_attribute_def_def_basicDefaultGid extends F
         attr.setNamespace(AttributesManager.NS_USER_FACILITY_ATTR_DEF);
         attr.setFriendlyName("basicDefaultGid");
         attr.setType(Integer.class.getName());
-        attr.setDescription("basic Default Unix Group ID.");
+        attr.setDescription("Pregenerated primary unix gid which is used if user doesn't have other preferencies.");
         return attr;
     }
 }
