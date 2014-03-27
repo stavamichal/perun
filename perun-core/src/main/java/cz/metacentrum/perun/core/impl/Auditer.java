@@ -245,6 +245,8 @@ public class Auditer {
      * @param transaction
      */
     public void flush() {
+        log.debug("TESTING- Flush method has been called in this moment.");
+        
         List<AuditerMessage> messages = (List<AuditerMessage>) TransactionSynchronizationManager.unbindResourceIfPossible(this);
         if(messages == null) {
             log.trace("No message to flush");

@@ -53,52 +53,36 @@ public class VosManagerEntry implements VosManager {
     }
 
     public List<Vo> getVos(PerunSession sess) throws InternalErrorException, PrivilegeException {
-        Utils.notNull(sess, "sess");
-
-        // Perun admin can see everything
-        if (AuthzResolver.isAuthorized(sess, Role.PERUNADMIN)) {
-            return vosManagerBl.getVos(sess);
-        } else {
-            if(sess.getPerunPrincipal().getRoles().hasRole(Role.VOADMIN) ||
-                    sess.getPerunPrincipal().getRoles().hasRole(Role.GROUPADMIN)) {
-
-                Set<Vo> vos = new HashSet<Vo>();
-
-                // Get Vos where user is VO Admin
-                for (PerunBean vo: AuthzResolver.getComplementaryObjectsForRole(sess, Role.VOADMIN, Vo.class)) {
-                    vos.add((Vo) vo);
-                }
-                
-                // Get Vos where user is VO Observer
-                for (PerunBean vo: AuthzResolver.getComplementaryObjectsForRole(sess, Role.VOOBSERVER, Vo.class)) {
-                    vos.add((Vo) vo);
-                }
-
-                // Get Vos where user has an group admin right on some of the group
-                for(PerunBean group: AuthzResolver.getComplementaryObjectsForRole(sess, Role.GROUPADMIN, Group.class)) {
-                    try {
-                        vos.add(vosManagerBl.getVoById(sess, ((Group) group).getVoId()));
-                    } catch (VoNotExistsException e) {
-                        throw new ConsistencyErrorException("User has group admin role for group from non-existent VO id:" + ((Group) group).getVoId(), e);
-                    }
-                }
-
-                return new ArrayList<Vo>(vos);
-            } else {
-                throw new PrivilegeException(sess, "getVos");
-            }
+        getPerunBl().getAuditer().log(sess, "TESTING- This message comes BEFORE nested transaction begin.");
+        
+        Vo v = new Vo(98999, "interniTest01", "interniTest01");
+        try {
+            getPerunBl().getVosManagerBl().createVo(sess, v);
+        } catch (VoExistsException ex) {
+            throw new InternalErrorException(ex);
         }
+        
+        //Return fictive vos
+        List<Vo> vos = new ArrayList<Vo>();
+        try {
+            vos = getPerunBl().getVosManagerBl().getVos(sess);
+        } catch (InternalErrorException ex) {
+            //this is ok, we excpected this exception
+        }
+        
+        try {
+            //Waiting for 15 seconds
+            Thread.sleep(15000);
+        } catch (InterruptedException ex) {
+            //nothing to do
+        }
+        
+        return vos;
     }
 
     public List<Vo> getAllVos(PerunSession perunSession) throws InternalErrorException, PrivilegeException {
-        Utils.notNull(perunSession, "sess");
-        if (!AuthzResolver.isAuthorized(perunSession, Role.VOADMIN) &&
-                !AuthzResolver.isAuthorized(perunSession, Role.GROUPADMIN) &&
-                !AuthzResolver.isAuthorized(perunSession, Role.VOOBSERVER) &&
-                !AuthzResolver.isAuthorized(perunSession, Role.FACILITYADMIN)) {
-            throw new PrivilegeException(perunSession, "getAllVos");
-        }
-        return vosManagerBl.getVos(perunSession);
+        
+        return new ArrayList<Vo>();
     }
 
     public void deleteVo(PerunSession sess, Vo vo, boolean forceDelete) throws VoNotExistsException, InternalErrorException, PrivilegeException, RelationExistsException {

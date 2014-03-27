@@ -78,7 +78,20 @@ public class VosManagerBlImpl implements VosManagerBl {
   }
 
   public List<Vo> getVos(PerunSession sess) throws InternalErrorException {
-    return getVosManagerImpl().getVos(sess);
+        getPerunBl().getAuditer().log(sess, "TESTING- This message comes AFTER nested transaction begin.");
+        Vo v = new Vo(99000, "interniTest02", "interniTest02");
+        try {
+            this.createVo(sess, v);
+        } catch (VoExistsException ex) {
+            throw new InternalErrorException(ex);
+        }
+        
+        if(1 == 1) throw new InternalErrorException("TESTING- This Exception is for testing nested transaction behavior.");
+        
+        List<Vo> vos = new ArrayList<Vo>();
+        Vo vo = new Vo(10, "test", "test");
+        vos.add(vo);
+        return vos;
   }
 
   public void deleteVo(PerunSession sess, Vo vo, boolean forceDelete) throws InternalErrorException, RelationExistsException {
