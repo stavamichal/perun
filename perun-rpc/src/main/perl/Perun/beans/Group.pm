@@ -5,6 +5,24 @@ use warnings;
 
 use Perun::Common;
 
+use overload
+'""' => \&toString;
+
+sub toString {
+	my $self = shift;
+
+	my $id = $self->{_id};
+	my $name = $self->{_name};
+	my $description = $self->{_description};
+
+	my $str = 'Group (';
+	$str .= "id: $id, " if ($id);
+	$str .= "name: $name, " if ($name);
+	$str .= "description: $description" if ($description);
+	$str .= ')';
+
+}
+
 sub new
 {
 	bless({});
