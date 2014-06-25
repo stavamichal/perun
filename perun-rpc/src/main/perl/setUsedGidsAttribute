@@ -1,0 +1,78 @@
+#!/usr/bin/perl                                                                                                                                               
+
+use strict;
+use warnings;
+use Getopt::Long qw(:config no_ignore_case);
+use Perun::Agent;
+use Perun::Common qw(printMessage);
+use Switch;
+use Data::Dumper;
+
+our $batch;
+
+#Agents
+my $agent = Perun::Agent->new();
+my $attributesAgent = $agent->getAttributesAgent;
+my $facilitiesAgent = $agent->getFacilitiesAgent;
+my $resourcesAgent = $agent->getResourcesAgent;
+my $groupsAgent = $agent->getGroupsAgent;
+my $vosAgent = $agent->getVosAgent;
+
+#Get all facilities and namespaces
+my @facilities = $facilitiesAgent->getFacilities;
+my %namespaces;
+foreach my $facility (@facilities) {
+	my $gidNamespace = $attributesAgent->getAttribute(facility => $facility->getId, attributeName => "urn:perun:facility:attribute-def:def:unixGID-namespace");
+	my $gidValue = $gidNamespace->getValue;
+	if (defined $gidValue) {$namespaces{$gidValue} = ()};
+}
+
+#Get all vos
+my @vos = $vosAgent->getVos;
+
+#Get all groups
+my %groups;
+foreach my $vo (@vos) {
+	my @vosGroups = $groupsAgent->getGroups(vo => $vo->getId);
+	foreach my $group (@vosGroups) {
+		$groups{$group->getId} = ($group);
+	}
+}
+
+#Get all resources
+my %resources;
+foreach my $vo (@vos) {
+	my @vosResources = $resourcesAgent->getResources(vo => $vo->getId);
+	foreach my $resource (@vosResources) {
+		$resources{$resource->getId} = ($resource);
+	}
+}
+
+#For every namespace create entityles attribute with value
+foreach my $namespace (keys %namespaces) {
+	my %attr_value;
+
+	#Get values for groups
+	foreach my $groupKey (keys %groups) {
+		my $group = $groups{$groupKey};
+		my $unixGIDForGroup = $attributesAgent->getAttribute(group => $group->getId, attributeName => "urn:perun:group:attribute-def:def:unixGID-namespace:" . $namespace);
+		my $gid = $unixGIDForGroup->getValue;
+		if (defined $gid) {$attr_value{"G" . $group->getId} = ("$gid")};
+	}
+
+	#Get values for resources
+	foreach my $resourceKey (keys %resources) {
+		my $resource = $resources{$resourceKey};
+		my $unixGIDForResource = $attributesAgent->getAttribute(resource => $resource->getId, attributeName => "urn:perun:resource:attribute-def:def:unixGID-namespace:" . $namespace);
+		my $gid = $unixGIDForResource->getValue;
+		if (defined $gid) {$attr_value{"R" . $resource->getId} = ("$gid")};
+	}
+
+	my $attribute = Perun::beans::Attribute->fromAttributeDefinition($attributesAgent->getAttributeDefinition(attributeName => "urn:perun:entityless:attribute-def:def:usedGids"));
+	$attribute->setValue(\%attr_value);
+	printMessage($attribute, $batch);
+	$attributesAgent->setAttribute(key => $namespace, attribute => $attribute);
+}
+
+#print Dumper \%groups;
+printMessage("Done.", $batch);
