@@ -148,7 +148,7 @@
                     <version>2.15</version>
                     <configuration>
                         <!-- disable logging for maven's tests / Test in you IDE will log normally -->
-                        <argLine>-Dlog4j.configuration=</argLine>
+                        <argLine>-Dlog4j.configuration=file:/etc/perun/log4j.xml</argLine>
                         <testFailureIgnore>false</testFailureIgnore>
                         <skip>false</skip>
                     </configuration>

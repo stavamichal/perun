@@ -41,6 +41,11 @@ import java.util.Set;
  */
 public interface AttributesManagerBl {
 
+	void testingMethodTransactionAllOk(PerunSession sess) throws Exception;
+
+	void testingMethodTransactionNestedBad(PerunSession sess) throws Exception;
+
+	void testingMethodTransactionParentBad(PerunSession sess) throws Exception;
 
 	/**
 	 * Get all <b>non-empty</b> attributes associated with the facility.

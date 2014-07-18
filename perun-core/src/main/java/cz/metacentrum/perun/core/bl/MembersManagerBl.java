@@ -719,6 +719,8 @@ public interface MembersManagerBl {
 	 */
 	Member validateMember(PerunSession sess, Member member) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException;
 
+	Member validateMember(PerunSession sess, Member member, boolean throwError) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException;
+
 	/**
 	 * Validate all attributes for member and then set member's status to VALID.
 	 * This method runs asynchronously. It immediately return member with <b>ORIGINAL</b> status and after asynchronous validation sucessfuly finishes

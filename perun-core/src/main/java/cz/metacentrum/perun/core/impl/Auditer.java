@@ -155,6 +155,7 @@ public class Auditer {
 			}
 			messages.add(new AuditerMessage(sess, message));
 		} else {
+			System.out.println("Auditer - storing msg directly to DB");
 			this.storeMessageToDb(sess, message);
 		}
 	}
@@ -245,16 +246,17 @@ public class Auditer {
 	 * @param transaction
 	 */
 	public void flush() {
+		System.out.println(this);
 		List<AuditerMessage> messages = (List<AuditerMessage>) TransactionSynchronizationManager.unbindResourceIfPossible(this);
 		if(messages == null) {
-			log.trace("No message to flush");
+			System.out.println("No message to flush");
 			return;
 		}
 
-		log.trace("Audit messages was flushed for current transaction.");
+		System.out.println("Audit messages was flushed for current transaction.");
 		synchronized (LOCK_DB_TABLE_AUDITER_LOG) {
 			for(AuditerMessage auditerMessage : messages) {
-				log.info("AUDIT: {}", auditerMessage.getMessage());
+				System.out.println("AUDIT: " + auditerMessage.getMessage());
 				storeMessageToDb(auditerMessage.getOriginaterPerunSession(), auditerMessage.getMessage());
 			}
 		}

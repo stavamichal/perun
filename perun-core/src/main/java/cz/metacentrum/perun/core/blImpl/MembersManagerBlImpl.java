@@ -61,6 +61,7 @@ import cz.metacentrum.perun.core.api.exceptions.VoNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.WrongAttributeAssignmentException;
 import cz.metacentrum.perun.core.api.exceptions.WrongAttributeValueException;
 import cz.metacentrum.perun.core.api.exceptions.WrongReferenceAttributeValueException;
+import cz.metacentrum.perun.core.api.exceptions.rt.InternalErrorRuntimeException;
 import cz.metacentrum.perun.core.bl.MembersManagerBl;
 import cz.metacentrum.perun.core.bl.PerunBl;
 import cz.metacentrum.perun.core.impl.Auditer;
@@ -915,8 +916,33 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 				throw new InternalErrorException(ex);
 			}
 		}
-
+		
 		return member;
+	}
+
+	public Member validateMember(PerunSession sess, Member member, boolean throwError) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException {
+		if(this.haveStatus(sess, member, Status.VALID)) {
+			log.debug("Trying to validate member who is already valid. " + member);
+			return member;
+		}
+
+		Status oldStatus = member.getStatus();
+		getMembersManagerImpl().setStatus(sess, member, Status.VALID);
+		getPerunBl().getAuditer().log(sess, "{} validated.", member);
+		member.setStatus(Status.VALID);
+		if(oldStatus.equals(Status.INVALID)) {
+			try {
+				getPerunBl().getAttributesManagerBl().doTheMagic(sess, member);
+			} catch (WrongAttributeAssignmentException ex) {
+				throw new InternalErrorException(ex);
+			}
+		}
+
+		if(throwError) {
+			throw new InternalErrorRuntimeException("Validate failed.");
+		} else {
+			return member;
+		}
 	}
 
 	public Member validateMemberAsync(final PerunSession sess, final Member member) throws InternalErrorException {

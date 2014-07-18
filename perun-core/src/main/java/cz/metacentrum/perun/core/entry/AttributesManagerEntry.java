@@ -46,6 +46,18 @@ public class AttributesManagerEntry implements AttributesManager {
 	public AttributesManagerEntry() {
 	}
 
+	public void testingMethodTransactionAllOk(PerunSession sess) throws Exception {
+		getAttributesManagerBl().testingMethodTransactionAllOk(sess);
+	}
+
+	public void testingMethodTransactionNestedBad(PerunSession sess) throws Exception {
+		getAttributesManagerBl().testingMethodTransactionNestedBad(sess);
+	}
+
+	public void testingMethodTransactionParentBad(PerunSession sess) throws Exception {
+		getAttributesManagerBl().testingMethodTransactionParentBad(sess);
+	}
+
 	public List<Attribute> getAttributes(PerunSession sess, Facility facility) throws PrivilegeException, FacilityNotExistsException, InternalErrorException {
 		Utils.checkPerunSession(sess);
 

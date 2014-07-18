@@ -29,6 +29,7 @@ import cz.metacentrum.perun.core.api.Attribute;
 import cz.metacentrum.perun.core.api.AttributeDefinition;
 import cz.metacentrum.perun.core.api.AttributeRights;
 import cz.metacentrum.perun.core.api.AttributesManager;
+import cz.metacentrum.perun.core.api.AuditMessage;
 import cz.metacentrum.perun.core.api.AuthzResolver;
 import cz.metacentrum.perun.core.api.ExtSourcesManager;
 import cz.metacentrum.perun.core.api.Facility;
@@ -61,6 +62,7 @@ import cz.metacentrum.perun.core.api.exceptions.WrongAttributeAssignmentExceptio
 import cz.metacentrum.perun.core.api.exceptions.WrongAttributeValueException;
 import cz.metacentrum.perun.core.api.exceptions.WrongModuleTypeException;
 import cz.metacentrum.perun.core.api.exceptions.WrongReferenceAttributeValueException;
+import cz.metacentrum.perun.core.api.exceptions.rt.InternalErrorRuntimeException;
 import cz.metacentrum.perun.core.bl.AttributesManagerBl;
 import cz.metacentrum.perun.core.bl.PerunBl;
 import cz.metacentrum.perun.core.impl.AttributesManagerImpl;
@@ -94,6 +96,67 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	 */
 	public AttributesManagerBlImpl(AttributesManagerImplApi attributesManagerImpl) {
 		this.attributesManagerImpl = attributesManagerImpl;
+	}
+
+	//Obalova transakce se povede, nested transakce uvnitr se povede, vse je ok, zpravy se zapisou az po ukonceni obalove transakce
+	public void testingMethodTransactionAllOk(PerunSession sess) throws Exception {
+		Vo vo = getPerunBl().getVosManagerBl().getVoById(sess, 1299);
+		User user = getPerunBl().getUsersManagerBl().getUserById(sess, 6701);
+		//deleting member
+		Member member = getPerunBl().getMembersManagerBl().getMemberByUser(sess, vo, user);
+		getPerunBl().getMembersManagerBl().deleteMember(sess, member);
+		member = getPerunBl().getMembersManagerBl().createMember(sess, vo, user);
+
+		getPerunBl().getMembersManagerBl().validateMember(sess, member);
+
+
+		for(int i=0;i<5;i++) {
+			System.out.println(i);
+			Thread.sleep(1000);
+		}
+
+		System.out.println("OK");
+	}
+
+	//Obalova transakce se povede ale nested transakce spadne, zapisi se jen zmeny z obalove a to i do logu
+	public void testingMethodTransactionNestedBad(PerunSession sess) throws Exception {
+		Vo vo = getPerunBl().getVosManagerBl().getVoById(sess, 1299);
+		User user = getPerunBl().getUsersManagerBl().getUserById(sess, 6701);
+		//deleting member
+		Member member = getPerunBl().getMembersManagerBl().getMemberByUser(sess, vo, user);
+		getPerunBl().getMembersManagerBl().deleteMember(sess, member);
+		member = getPerunBl().getMembersManagerBl().createMember(sess, vo, user);
+
+		for(int i=0;i<5;i++) {
+			System.out.println(i);
+			Thread.sleep(1000);
+		}
+
+		try {
+			getPerunBl().getMembersManagerBl().validateMember(sess, member, true);
+		} catch (InternalErrorRuntimeException ex) {
+			System.out.println("Skoncilo.");
+		}
+	}
+
+	//Obalova metoda selze, ale nested projde, musi se vse rollbacknout i vcetne nested transakce
+	public void testingMethodTransactionParentBad(PerunSession sess) throws Exception {
+		Vo vo = getPerunBl().getVosManagerBl().getVoById(sess, 1299);
+		User user = getPerunBl().getUsersManagerBl().getUserById(sess, 6701);
+		//deleting member
+		Member member = getPerunBl().getMembersManagerBl().getMemberByUser(sess, vo, user);
+		getPerunBl().getMembersManagerBl().deleteMember(sess, member);
+		member = getPerunBl().getMembersManagerBl().createMember(sess, vo, user);
+
+		getPerunBl().getMembersManagerBl().validateMember(sess, member, false);
+
+
+		for(int i=0;i<5;i++) {
+			System.out.println(i);
+			Thread.sleep(1000);
+		}
+
+		throw new InternalErrorRuntimeException("Obalova transakce spadla.");
 	}
 
 	public List<Attribute> getAttributes(PerunSession sess, Facility facility) throws InternalErrorException {

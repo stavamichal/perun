@@ -17,6 +17,8 @@ public class PerunTransactionManager extends DataSourceTransactionManager implem
 
 	private Auditer auditer;
 
+
+
 	@Override
 	protected Object doSuspend(Object transaction) {
 		if(TransactionSynchronizationManager.hasResource(this.getAuditer())) {
@@ -30,7 +32,7 @@ public class PerunTransactionManager extends DataSourceTransactionManager implem
 	@Override
 	protected void doResume(Object transaction, Object suspendedResources) {
 		if(TransactionSynchronizationManager.hasResource(this.getAuditer())) {
-			List<AuditerMessage> messages = (List<AuditerMessage>) TransactionSynchronizationManager.getResource(transaction);
+			List<AuditerMessage> messages = (List<AuditerMessage>) TransactionSynchronizationManager.getResource(getAuditer());
 			logger.trace("Retrieving audit messages while rusuming transaction. Number of messages " + messages.size());
 		}
 
@@ -39,13 +41,43 @@ public class PerunTransactionManager extends DataSourceTransactionManager implem
 
 	@Override
 	protected void doCommit(DefaultTransactionStatus status) {
+
+		logger.info("commit");
+		logger.info("rollback only:" + status.isRollbackOnly() + "gro: " + status.isGlobalRollbackOnly());
+
 		super.doCommit(status);
+
+		//System.out.println("map " + TransactionSynchronizationManager.getResourceMap());
+
+		for(Object o: TransactionSynchronizationManager.getResourceMap().keySet()) {
+			if(o.getClass().equals(getAuditer().getClass())) System.out.println("YES");
+			//System.out.println(o.getClass());
+		}
+		//System.out.println(getAuditer().getClass());
+		
+		List<AuditerMessage> messages = (List<AuditerMessage>) TransactionSynchronizationManager.getResource(getAuditer());
+		if(messages != null) {
+			System.out.println("COMMIT. Number of messages " + messages.size());
+		} else {
+			System.out.println("COMMIT - NO MSG");
+		}
+
+		System.out.println(getAuditer());
+
 		this.getAuditer().flush();
 	}
 
 	@Override
 	protected void doRollback(DefaultTransactionStatus status) {
 		super.doRollback(status);
+
+		if(TransactionSynchronizationManager.hasResource(this.getAuditer())) {
+			List<AuditerMessage> messages = (List<AuditerMessage>) TransactionSynchronizationManager.getResource(getAuditer());
+			System.out.println("ROLLBACK. Number of messages " + messages.size());
+		} else {
+			System.out.println("ROLLBACK - NO MSG");
+		}
+
 		this.getAuditer().clean();
 	}
 

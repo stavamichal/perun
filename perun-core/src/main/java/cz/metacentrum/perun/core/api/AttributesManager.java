@@ -83,6 +83,12 @@ public interface AttributesManager {
 
 	//public static final String NS_ATTR_DEF_FACILITY= NS_ATTR_DEF + ":facility";
 
+	void testingMethodTransactionAllOk(PerunSession sess) throws Exception;
+
+	void testingMethodTransactionNestedBad(PerunSession sess) throws Exception;
+
+	void testingMethodTransactionParentBad(PerunSession sess) throws Exception;
+
 	/**
 	 * Get all <b>non-empty</b> attributes associated with the facility.
 	 * PRIVILEGE: Get only those attributes the principal has access to.
