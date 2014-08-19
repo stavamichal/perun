@@ -37,7 +37,7 @@ public class urn_perun_user_facility_attribute_def_def_defaultUnixGID extends Fa
 	 */
 	public void checkAttributeValue(PerunSessionImpl sess, Facility facility, User user, Attribute attribute) throws WrongAttributeValueException, WrongReferenceAttributeValueException, InternalErrorException, WrongAttributeAssignmentException {
 		Integer gid = (Integer) attribute.getValue();
-		if(gid == null) throw new WrongAttributeValueException(attribute, user, facility, "Attribute value is null.");
+		if(gid == null) return;
 
 		Attribute namespaceAttribute;
 		try {
@@ -78,24 +78,10 @@ public class urn_perun_user_facility_attribute_def_def_defaultUnixGID extends Fa
 			throw new ConsistencyErrorException("Namespace from value of " + namespaceAttribute + " doesn't exists. (Group-resource attribute " + AttributesManager.NS_GROUP_ATTR_DEF + ":unixGID-namespace:" + namespaceName + " doesn't exists", ex);
 		}
 
-		Attribute groupResourceIsUnixGroupAttrtibute;
-		try {
-			groupResourceIsUnixGroupAttrtibute = new Attribute(sess.getPerunBl().getAttributesManagerBl().getAttributeDefinition(sess, AttributesManager.NS_GROUP_RESOURCE_ATTR_DEF + ":isUnixGroup"));
-			groupResourceIsUnixGroupAttrtibute.setValue(1);
-		} catch(AttributeNotExistsException ex) {
-			throw new ConsistencyErrorException(ex);
-		}
-
 		List<Group> groupWithSameGid = sess.getPerunBl().getGroupsManagerBl().getGroupsByAttribute(sess, groupGidAttribute);
 
-		Service groupService;
-		try {
-			groupService = sess.getPerunBl().getServicesManagerBl().getServiceByName(sess, "group");
-		} catch(ServiceNotExistsException ex) {
-			throw new InternalErrorException(ex);
-		}
 		List<Group> candidateGroups = groupWithSameGid;
-		candidateGroups.retainAll(sess.getPerunBl().getFacilitiesManagerBl().getAllowedGroups(sess, facility, null, groupService));
+		candidateGroups.retainAll(sess.getPerunBl().getFacilitiesManagerBl().getAllowedGroups(sess, facility, null, null));
 
 		for(Group group : candidateGroups) {
 			//check if group has unix group name in namespace required by facility
