@@ -58,7 +58,9 @@ public final class JsonSerializer implements Serializer {
 	private static final ObjectMapper mapper = new ObjectMapper();
 
 	static {
-		mapper.getSerializationConfig().addMixInAnnotations(PerunBean.class, PolymorphicPerunBean.class);
+		mapper.getSerializationConfig().addMixInAnnotations(PerunBean.class, PolymorphicPerunBeanMixIn.class);
+		mapper.getDeserializationConfig().addMixInAnnotations(PerunBean.class, PolymorphicPerunBeanMixIn.class);
+		
 		mapper.getSerializationConfig().addMixInAnnotations(Attribute.class, AttributeMixIn.class);
 		mapper.getSerializationConfig().addMixInAnnotations(AttributeDefinition.class, AttributeDefinitionMixIn.class);
 		mapper.getSerializationConfig().addMixInAnnotations(User.class, UserMixIn.class);
@@ -77,7 +79,7 @@ public final class JsonSerializer implements Serializer {
 					@Type(value = Vo.class, name="vo"),
 					@Type(value = Resource.class, name="resource"),
 					@Type(value = Service.class, name="service")})
-	abstract class PolymorphicPerunBean {
+	abstract class PolymorphicPerunBeanMixIn {
 
 	}
 
