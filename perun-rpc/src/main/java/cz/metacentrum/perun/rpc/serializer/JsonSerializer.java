@@ -3,13 +3,22 @@ package cz.metacentrum.perun.rpc.serializer;
 import cz.metacentrum.perun.core.api.Attribute;
 import cz.metacentrum.perun.core.api.AttributeDefinition;
 import cz.metacentrum.perun.core.api.Candidate;
+import cz.metacentrum.perun.core.api.Facility;
+import cz.metacentrum.perun.core.api.Group;
+import cz.metacentrum.perun.core.api.PerunBean;
+import cz.metacentrum.perun.core.api.Resource;
+import cz.metacentrum.perun.core.api.Service;
 import cz.metacentrum.perun.core.api.User;
+import cz.metacentrum.perun.core.api.Vo;
 import cz.metacentrum.perun.core.api.exceptions.PerunException;
 import cz.metacentrum.perun.core.api.exceptions.rt.PerunRuntimeException;
 import cz.metacentrum.perun.rpc.RpcException;
 import org.codehaus.jackson.JsonEncoding;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.annotate.JsonSubTypes;
+import org.codehaus.jackson.annotate.JsonTypeInfo;
+import org.codehaus.jackson.annotate.JsonSubTypes.Type;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -49,12 +58,27 @@ public final class JsonSerializer implements Serializer {
 	private static final ObjectMapper mapper = new ObjectMapper();
 
 	static {
+		mapper.getSerializationConfig().addMixInAnnotations(PerunBean.class, PolymorphicPerunBean.class);
 		mapper.getSerializationConfig().addMixInAnnotations(Attribute.class, AttributeMixIn.class);
 		mapper.getSerializationConfig().addMixInAnnotations(AttributeDefinition.class, AttributeDefinitionMixIn.class);
 		mapper.getSerializationConfig().addMixInAnnotations(User.class, UserMixIn.class);
 		mapper.getSerializationConfig().addMixInAnnotations(Candidate.class, CandidateMixIn.class);
 		mapper.getSerializationConfig().addMixInAnnotations(PerunException.class, PerunExceptionMixIn.class);
 		mapper.getSerializationConfig().addMixInAnnotations(PerunRuntimeException.class, PerunExceptionMixIn.class);
+	}
+
+	@JsonTypeInfo(
+					use = JsonTypeInfo.Id.NAME,
+					include = JsonTypeInfo.As.PROPERTY,
+					property = "type")
+	@JsonSubTypes({
+					@Type(value = Group.class, name="group"),
+					@Type(value = Facility.class, name="facility"),
+					@Type(value = Vo.class, name="vo"),
+					@Type(value = Resource.class, name="resource"),
+					@Type(value = Service.class, name="service")})
+	abstract class PolymorphicPerunBean {
+
 	}
 
 	private static final JsonFactory jsonFactory = new JsonFactory();
