@@ -143,13 +143,14 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				List<Resource> subGroupResources = getPerunBl().getResourcesManagerBl().getAssignedResources(sess, g);
 				for(Resource resource : subGroupResources) {
 					try {
+						//remove also group-resource, user-facility and member-resource attributes for subgroup
 						getPerunBl().getResourcesManagerBl().removeGroupFromResource(sess, g, resource);
 					} catch(GroupNotDefinedOnResourceException ex) {
 						throw new ConsistencyErrorException(ex);
 					}
 				}
 
-				//remove subgroups' attributes
+				//remove subgroups' (namespace: group) attributes
 				try {
 					getPerunBl().getAttributesManagerBl().removeAllAttributes(sess, g);
 				} catch(AttributeValueException ex) {
@@ -207,6 +208,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 		List<Resource> assignedResources  = getPerunBl().getResourcesManagerBl().getAssignedResources(sess, group);
 		try {
 			for(Resource resource : assignedResources) {
+				//remove also group-resource, user-facility and member-resource attributes for group
 				getPerunBl().getResourcesManagerBl().removeGroupFromResource(sess, group, resource);
 			}
 			//remove group's attributes
@@ -408,6 +410,16 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	}
 
 	protected void removeMemberInternal(PerunSession sess, Group group, Member member) throws InternalErrorException, NotGroupMemberException {
+		//Get user, vo and all his assigned facilities and resources
+		User user = getPerunBl().getUsersManagerBl().getUserByMember(sess, member);
+		Vo vo;
+		try {
+			vo = getPerunBl().getVosManagerBl().getVoById(sess, group.getVoId());
+		} catch (VoNotExistsException ex) {
+			throw new ConsistencyErrorException("Vo for " + group + " not exists.", ex);
+		}
+		List<Facility> assignedFacilitiesBeforeRemoving = getPerunBl().getFacilitiesManagerBl().getAssignedFacilities(sess, user);
+		List<Resource> assignedResourcesBeforeRemoving = getPerunBl().getResourcesManagerBl().getAssignedResources(sess, user, vo);
 
 		member.setMembershipType(MembershipType.DIRECT);
 		getGroupsManagerImpl().removeMember(sess, group, member);
@@ -430,6 +442,27 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 			}
 		}
 
+		//remove all member-resource attributes for user and resource where user is not assigned now but was before removing his member from groups
+		List<Resource> assignedResourcesAfterRemoving = getPerunBl().getResourcesManagerBl().getAssignedResources(sess, user, vo);
+		assignedResourcesBeforeRemoving.removeAll(assignedResourcesAfterRemoving);
+		for(Resource res: assignedResourcesBeforeRemoving) {
+			try {
+				getPerunBl().getAttributesManagerBl().removeAllAttributes(sess, res, member);
+			} catch (WrongAttributeAssignmentException | WrongAttributeValueException | WrongReferenceAttributeValueException ex) {
+				throw new InternalErrorException("Cannot remove all member-resource attributes for " + user + " and " + res, ex);
+			}
+		}
+
+		//remove all user-facility attributes for user and facilities where user is not assigned now but was before removing his member from groups
+		List<Facility> assignedFacilitiesAfterRemoving = getPerunBl().getFacilitiesManagerBl().getAssignedFacilities(sess, user);
+		assignedFacilitiesBeforeRemoving.removeAll(assignedFacilitiesAfterRemoving);
+		for(Facility fac: assignedFacilitiesBeforeRemoving) {
+			try {
+				getPerunBl().getAttributesManagerBl().removeAllAttributes(sess, fac, user);
+			} catch (WrongAttributeValueException | WrongReferenceAttributeValueException ex) {
+				throw new InternalErrorException("Cannot remove all user-facility attributes for " + user + " and " + fac, ex);
+			}
+		}
 	}
 
 	public List<Member> getGroupMembers(PerunSession sess, Group group) throws InternalErrorException {

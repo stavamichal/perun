@@ -95,9 +95,11 @@ public class ResourcesManagerBlImpl implements ResourcesManagerBl {
 			}
 		}
 
+		//remove all groups from resource and remove also their attributes (namespace: user-fac, mem-res, group-res)
 		List<Group> groups = getAssignedGroups(sess, resource);
 		for (Group group: groups){
 			try {
+				//delete also group-resource, user-facility and member-resource attributes
 				removeGroupFromResource(sess, group, resource);
 			} catch (GroupNotDefinedOnResourceException ex) {
 				throw new GroupAlreadyRemovedFromResourceException(ex);
@@ -111,17 +113,6 @@ public class ResourcesManagerBlImpl implements ResourcesManagerBl {
 			throw new ConsistencyErrorException("All services are removed from this resource. There is no required attribute. So all attribtes for this resource can be removed withou problem.", ex);
 		}
 
-		// Remove group-resource attr values for all group and resource
-		try {
-			this.perunBl.getAttributesManagerBl().removeAllGroupResourceAttributes(sess, resource);
-		} catch (WrongAttributeValueException ex) {
-			throw new InternalErrorException(ex);
-		} catch (WrongAttributeAssignmentException ex) {
-			throw new InternalErrorException(ex);
-		} catch (WrongReferenceAttributeValueException ex) {
-			throw new InternalErrorException(ex);
-		}	
-		//Remove all resources tags
 		this.removeAllResourcesTagFromResource(sess, resource);
 
 		// Get the resource VO
@@ -315,50 +306,39 @@ public class ResourcesManagerBlImpl implements ResourcesManagerBl {
 			throw new InternalErrorException(e);
 		}
 
-		//check attributes and set new correct values if necessary
+		//get information for removing attributes (namespace: user-facility, group-members)
+		//get all assigned users ids
+		Set<Integer> assignedToResourceUsersIds = new HashSet<>();
+		List<Member> assignedToResourceMembers = getPerunBl().getResourcesManagerBl().getAssignedMembers(sess, resource);
+		for(Member mem: assignedToResourceMembers) {
+			assignedToResourceUsersIds.add(mem.getUserId());
+		}
+		//get all groups members, facility and assigned users
 		List<Member> groupsMembers = getPerunBl().getGroupsManagerBl().getGroupMembers(sess, group);
 		Facility facility = getFacility(sess, resource);
-		List<User> allowedUsers = getPerunBl().getFacilitiesManagerBl().getAllowedUsers(sess, facility);
+		List<User> assignedToFacilityUsers = getPerunBl().getFacilitiesManagerBl().getAssignedUsers(sess, facility);
+
 		for(Member member : groupsMembers) {
+			//Removing user-facility attributes
 			User user = getPerunBl().getUsersManagerBl().getUserByMember(sess, member);
-			if(!allowedUsers.contains(user)) { //user don't have acess to facility now
-				//his attributes can keep original value
-
-				//find required user-facility attributes (that which are not required can keep original value)
-				List<Attribute> userFacilityAttributes = getPerunBl().getAttributesManagerBl().getRequiredAttributes(sess, facility, user);
-
-				//find which of attributes are broken
-				List<Attribute> brokenUserFacilityAttributes = new ArrayList<Attribute>();
-				for(Attribute attribute : userFacilityAttributes) {
-					try {
-						getPerunBl().getAttributesManagerBl().checkAttributeValue(sess, facility, user, attribute);
-					} catch(WrongAttributeAssignmentException ex) {
-						throw new ConsistencyErrorException(ex);
-					} catch(WrongAttributeValueException ex) {
-						attribute.setValue(null);
-						brokenUserFacilityAttributes.add(attribute);
-					} catch(WrongReferenceAttributeValueException ex) {
-						//TODO jeste o tom popremyslet
-						//TODO this may fix it
-						attribute.setValue(null);
-						brokenUserFacilityAttributes.add(attribute);
-					}
-				}
-
-				//fix broken attributes
+			//user doesn't have relation to facility now
+			if(!assignedToFacilityUsers.contains(user)) {
+				//remove all user facility attributes for this user and this facility
 				try {
-					List<Attribute> fixedUserFacilityAttributes = getPerunBl().getAttributesManagerBl().fillAttributes(sess, facility, user, brokenUserFacilityAttributes);
-					getPerunBl().getAttributesManagerBl().setAttributes(sess, facility, user, fixedUserFacilityAttributes);
-				} catch(WrongAttributeAssignmentException ex) {
-					throw new ConsistencyErrorException(ex);
-				} catch(WrongAttributeValueException ex) {
-					//TODO jeste o tom popremyslet
-					//That's unresolveable problem
-					throw new InternalErrorException("Can't set attributes for user-facility correctly. User=" + user + " Facility=" + facility + ".", ex);
-				} catch(WrongReferenceAttributeValueException ex) {
-					//TODO jeste o tom popremyslet
-					//That's unresolveable problem
-					throw new InternalErrorException("Can't set attributes for user-facility correctly. User=" + user + " Facility=" + facility + ".", ex);
+					getPerunBl().getAttributesManagerBl().removeAllAttributes(sess, facility, user);
+				} catch (WrongAttributeValueException | WrongReferenceAttributeValueException ex) {
+					throw new InternalErrorException("Can't remove some of " + user + " attributes from " + facility, ex);
+				}
+			}
+
+			//Removing member-resource attributes
+			//Member doesn't have relation to resource now
+			if(!assignedToResourceUsersIds.contains(member.getUserId())) {
+				//remove all member resource attribute sfor this member and this resource
+				try {
+					getPerunBl().getAttributesManagerBl().removeAllAttributes(sess, resource, member);
+				} catch (WrongAttributeValueException | WrongReferenceAttributeValueException | WrongAttributeAssignmentException ex) {
+					throw new InternalErrorException("Can't remove some of " + member + " attributes from " + resource, ex);
 				}
 			}
 		}

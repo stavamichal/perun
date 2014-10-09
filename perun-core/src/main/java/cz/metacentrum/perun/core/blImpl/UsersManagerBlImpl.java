@@ -285,6 +285,7 @@ public class UsersManagerBlImpl implements UsersManagerBl {
 		if (members != null && (members.size() > 0)) {
 			if (forceDelete) {
 				for (Member member: members) {
+					//remove also all member-resource, user-facility and member attributes for this member
 					getPerunBl().getMembersManagerBl().deleteMember(sess, member);
 				}
 			} else {
@@ -346,13 +347,9 @@ public class UsersManagerBlImpl implements UsersManagerBl {
 			}
 		}
 
-
-		// Delete assigned attributes
-		// Users one
+		// Delete all user attributes
 		try {
 			getPerunBl().getAttributesManagerBl().removeAllAttributes(sess, user);
-			// User-Facilities one
-			getPerunBl().getAttributesManagerBl().removeAllUserFacilityAttributes(sess, user);
 		} catch(WrongAttributeValueException ex) {
 			//All members are deleted => there are no required attribute => all atributes can be removed
 			throw new ConsistencyErrorException(ex);

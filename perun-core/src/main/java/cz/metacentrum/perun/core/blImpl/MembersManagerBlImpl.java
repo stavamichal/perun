@@ -93,15 +93,6 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 			throw new ConsistencyErrorException("Removing member who doesn't have corresponding user.", e1);
 		}
 
-		List<Facility> allowedFacilities = getPerunBl().getFacilitiesManagerBl().getAllowedFacilities(sess, user);
-
-		Map<Facility, List<Attribute>> requiredAttributesBeforeMemberRemove = new HashMap<Facility, List<Attribute>>();
-
-		for(Facility facility : allowedFacilities) {
-			// Get actually required attributes, they will be later compared with list of required attributes when the member will be removed from all resources in this VO
-			requiredAttributesBeforeMemberRemove.put(facility, getPerunBl().getAttributesManagerBl().getRequiredAttributes(sess, facility, user));
-		}
-
 		// Remove member from all groups
 		List<Group> memberGroups = getPerunBl().getGroupsManagerBl().getMemberDirectGroups(sess, member);
 		for (Group group: memberGroups) {
@@ -109,6 +100,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 			if(group.getName().equals(VosManager.MEMBERS_GROUP)) continue;
 
 			try {
+				//remove member also remove all member-resource and user-facility attributes
 				getPerunBl().getGroupsManagerBl().removeMember(sess, group, member);
 			} catch (NotGroupMemberException e) {
 				throw new ConsistencyErrorException("getMemberGroups return group where the member is not member", e);
@@ -119,6 +111,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 		try {
 			Group g = getPerunBl().getGroupsManagerBl().getGroupByName(sess, vo, VosManager.MEMBERS_GROUP);
 			try {
+				//remove member also remove all member-resource and user-facility attributes
 				getPerunBl().getGroupsManagerBl().removeMemberFromMembersOrAdministratorsGroup(sess, g, member);
 			} catch (NotGroupMemberException e) {
 				throw new ConsistencyErrorException("Member is not in the \"members\" group." + member + "  " + g, e);
@@ -127,46 +120,12 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 			throw new InternalErrorException(e);
 		}
 
-		// Remove member's  attributes (namespaces: member and resource-member)
+		// Remove member's  attributes (namespaces: member)
 		try {
 			getPerunBl().getAttributesManagerBl().removeAllAttributes(sess, member);
-			List<Resource> resources = getPerunBl().getResourcesManagerBl().getResources(sess, vo);
-			for(Resource resource : resources) {
-				getPerunBl().getAttributesManagerBl().removeAllAttributes(sess, resource, member);
-			}
 		} catch(AttributeValueException ex) {
 			throw new ConsistencyErrorException("Member is removed from all groups. There are no required attribute for this member. Member's attributes can be removed without problem.", ex);
-		} catch(WrongAttributeAssignmentException ex) {
-			throw new InternalErrorException(ex);
 		}
-
-		// Remove user-facility attributes which are no longer required
-		for(Facility facility : allowedFacilities) {
-			List<Attribute> requiredAttributes = requiredAttributesBeforeMemberRemove.get(facility);
-			//remove currently required attributes from requiredAttributesBeforeMemberRemove
-			requiredAttributes.removeAll(getPerunBl().getAttributesManagerBl().getRequiredAttributes(sess, facility, user));
-			//remove attributes which are no longer required
-			try {
-				getPerunBl().getAttributesManagerBl().removeAttributes(sess, facility, user, requiredAttributes);
-			} catch(AttributeValueException ex) {
-				throw new ConsistencyErrorException(ex);
-			} catch(WrongAttributeAssignmentException ex) {
-				throw new ConsistencyErrorException(ex);
-			}
-		}
-
-
-		/* TODO this can be used for future optimization. If the user is not asigned to the facility anymore all user-facility attributes (for this facility) can be safely removed.
-			 for (Facility facility: facilitiesBeforeMemberRemove) {
-		// Remove user-facility attributes
-		try {
-		getPerunBl().getAttributesManagerBl().removeAllAttributes(sess, facility, user);
-		log.debug("Removing user-facility attributes for facility {}", facility);
-		} catch (AttributeValueException e) {
-		throw new ConsistencyErrorException("Member is removed from all resources. There are no required attribute for this member. User-facility attributes can be removed without problem.", e);
-		}
-			 }
-			 */
 
 		// Remove member from the DB
 		getMembersManagerImpl().deleteMember(sess, member);
