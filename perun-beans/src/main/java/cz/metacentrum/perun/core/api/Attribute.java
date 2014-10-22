@@ -7,7 +7,9 @@ import cz.metacentrum.perun.core.api.AttributeDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import cz.metacentrum.perun.core.api.BeansUtils;
+import cz.metacentrum.perun.core.api.exceptions.CloningObjectFailedException;
 import cz.metacentrum.perun.core.api.exceptions.InternalErrorException;
+import java.util.List;
 
 /**
  * This class represents attribute (with value) of some object (VO, member).
@@ -139,6 +141,45 @@ public class Attribute extends AttributeDefinition {
 
 		if(this.value == null ? other.value != null : !this.value.equals(other.value)) return false;
 		return true;
+	}
+
+	public Attribute cloneAttribute() throws CloningObjectFailedException {
+		//create new attribute which will be clone of this object
+		Attribute clone = new Attribute(this.cloneAttributeDefinition());
+
+		//clone value
+		Object value = this.getValue();
+		if(value == null) {
+			clone.setValue(null);
+		} else {
+			if(getType() == null) {
+				throw new CloningObjectFailedException("There is no type for Attribute and there is still some not null value.", this);
+			} else {
+				if(getType().equals(String.class.getName())) {
+					String clonedValue = (String) value;
+					clone.setValue(clonedValue);
+				} else if(getType().equals(Integer.class.getName())) {
+					Integer clonedValue = new Integer((Integer) value);
+					clone.setValue(clonedValue);
+				} else if(getType().equals(ArrayList.class.getName())) {
+					List<String> clonedValue = new ArrayList<>((List) value);
+					clone.setValue(clonedValue);
+				} else if(getType().equals(LinkedHashMap.class.getName())) {
+					LinkedHashMap<String,String> clonedValue = new LinkedHashMap<>((LinkedHashMap) value);
+					clone.setValue(clonedValue);
+				} else {
+					throw new CloningObjectFailedException("There is unknown type in Attribute: " + this.getType(), this);
+				}
+			}
+		}
+
+		//clone creation and modification value data
+		clone.setValueCreatedAt(this.getValueCreatedAt());
+		clone.setValueCreatedBy(this.getValueCreatedBy());
+		clone.setValueModifiedAt(this.getValueModifiedAt());
+		clone.setValueModifiedBy(this.getValueModifiedBy());
+
+		return clone;
 	}
 
 	@Override

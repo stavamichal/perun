@@ -1037,6 +1037,30 @@ public class Utils {
 	}
 
 	/**
+	 * Clone list of attributes.
+	 *
+	 * "clone" means create standalone copy of list, where attributes are not pointers but new objects with own copy properties.
+	 *
+	 * @param listToClone list which will be cloned
+	 *
+	 * @return clone of list
+	 *
+	 * @throws CloningObjectFailedException if some Attribute can't be cloned because of some problem
+	 */
+	public static List<Attribute> cloneListOfAttributes(List<Attribute> listToClone) throws CloningObjectFailedException {
+		List<Attribute> cloneList = new ArrayList<>();
+		if(listToClone == null) return null;
+		if(listToClone.isEmpty()) return cloneList;
+
+		for(Attribute attr: listToClone) {
+			Attribute cloneAttribute = attr.cloneAttribute();
+			cloneList.add(cloneAttribute);
+		}
+
+		return cloneList;
+	}
+
+	/**
 	 * Set already filled-in properties (used by Spring container to inject properties bean)
 	 * 
 	 * @param properties

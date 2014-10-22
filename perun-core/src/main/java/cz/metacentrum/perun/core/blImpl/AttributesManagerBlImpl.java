@@ -48,6 +48,7 @@ import cz.metacentrum.perun.core.api.Vo;
 import cz.metacentrum.perun.core.api.exceptions.ActionTypeNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.AttributeExistsException;
 import cz.metacentrum.perun.core.api.exceptions.AttributeNotExistsException;
+import cz.metacentrum.perun.core.api.exceptions.CloningObjectFailedException;
 import cz.metacentrum.perun.core.api.exceptions.ConsistencyErrorException;
 import cz.metacentrum.perun.core.api.exceptions.FacilityNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.GroupNotExistsException;
@@ -1137,6 +1138,14 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	}
 
 	public void setRequiredAttributes(PerunSession sess, Facility facility, Resource resource, User user, Member member, List<Attribute> attributes) throws InternalErrorException, WrongAttributeAssignmentException, WrongReferenceAttributeValueException, AttributeNotExistsException, WrongAttributeValueException {
+		//create clone of list of attributes
+		List<Attribute> copyOfList = new ArrayList<>();
+		try {
+			copyOfList = Utils.cloneListOfAttributes(attributes);
+		} catch (CloningObjectFailedException ex) {
+			throw new InternalErrorException("Problem with cloning list of attributes for object: " + ex.getClonedObject(), ex);
+		}
+
 		//fill attributes and get back only those which were really filled with new value
 		List<Attribute> filledAttributes = this.fillAttributes(sess, facility, resource, user, member, attributes, true);
 
@@ -1193,7 +1202,14 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 		//Check all attributes
 		checkAttributesValue(sess, facility, resource, user, member, attributes);
 
-		//Check all attributes dependencies
+		//reduce list of attributes only on those, which change their values from start of this method
+		Iterator<Attribute> iterator = attributes.iterator();
+		while(iterator.hasNext()) {
+			Attribute attr = iterator.next();
+			//remove those who are same like in the copyOfList (not change their values)
+			if(copyOfList.contains(attr)) iterator.remove();
+		}
+		//Check dependencies for attributes which change their values
 		this.checkAttributesDependencies(sess, resource, member, user, facility, attributes);
 	}
 	

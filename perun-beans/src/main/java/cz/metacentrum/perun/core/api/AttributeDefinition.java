@@ -193,6 +193,30 @@ public class AttributeDefinition extends Auditable implements Comparable<Attribu
 				']').toString();
 	}
 
+	AttributeDefinition cloneAttributeDefinition() {
+		//create new attributeDefinition which will be clone of this object
+		AttributeDefinition clone = new AttributeDefinition();
+
+		//set important options
+		clone.setId(this.getId());
+		clone.setDescription(this.getDescription());
+		clone.setType(this.getType());
+		clone.setNamespace(this.getNamespace());
+		clone.setFriendlyName(this.getFriendlyName());
+		clone.setDisplayName(this.getDisplayName());
+		clone.setWritable(this.getWritable());
+
+		//clone creation and modification data
+		clone.setCreatedAt(this.getCreatedAt());
+		clone.setCreatedBy(this.getCreatedBy());
+		clone.setCreatedByUid(this.getCreatedByUid());
+		clone.setModifiedAt(this.getModifiedAt());
+		clone.setModifiedBy(this.getModifiedBy());
+		clone.setModifiedByUid(this.getModifiedByUid());
+		
+		return clone;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder str = new StringBuilder();
