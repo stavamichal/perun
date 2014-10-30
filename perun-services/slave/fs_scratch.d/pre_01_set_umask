@@ -1,0 +1,8 @@
+#!/bin/sh
+# By default UMASK is set to 0700, to change set next variable to something different
+#UMASK=0700
+
+#If this is probably frontend, change UMASK to 755
+(which pbsmom 1>/dev/null || pidof pbsmom 1>/dev/null) || UMASK="755"
+
+

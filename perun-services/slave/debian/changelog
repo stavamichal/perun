@@ -1,3 +1,10 @@
+perun-slave (3.0.0-0.0.82) stable; urgency=low
+
+   * add checking if node is frontend to fs_scratch and fs_scratch_local
+   * if node is frontend, set UMASK on scratch dir to 755 (default is 700)
+
+ -- Michal Stava <stavamichal@gmail.com> Thu, 30 Oct 2014 12:00:00 +0200
+
 perun-slave (3.0.0-0.0.81) stable; urgency=low
 
    * add possibility to edit umask on newly created directories by script
