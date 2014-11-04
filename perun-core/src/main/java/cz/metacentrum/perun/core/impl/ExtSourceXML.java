@@ -338,21 +338,28 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 	 */
 	private InputStream createTwoWaySSLConnection(String uri) throws IOException, InternalErrorException {
 		if(uri == null || uri.isEmpty()) throw new InternalErrorException("Uri must be filled, can't be null or empty.");
-		
+
+		log.debug("XML-EXTSOURCE: uri = '" + uri + "'");
 		//KeyStore data
 		String keyStore =  getAttributes().get("keyStore");
+		log.debug("XML-EXTSOURCE: keyStore ='" + keyStore  + "'");
 		String keyStorePass = getAttributes().get("keyStorePass");
+		log.debug("XML-EXTSOURCE: keyStorePass ='" + keyStorePass  + "'");
 		String keyStoreType = getAttributes().get("keyStoreType");
+		log.debug("XML-EXTSOURCE: keyStoreType ='" + keyStoreType  + "'");
 		if(keyStore == null || keyStorePass == null || keyStoreType == null) {
 			throw new InternalErrorException("KeystorePath, KeystorePass and KeystoreType must be filled. Please look into configuration file.");
 		}
 		
 		//TrustStore data
 		String trustStore = getAttributes().get("trustStore");
+		log.debug("XML-EXTSOURCE: trustStore ='" + trustStore  + "'");
 		String trustStorePass = getAttributes().get("trustStorePass");
+		log.debug("XML-EXTSOURCE: trustStorePass ='" + trustStorePass  + "'");
 		if(trustStore == null || trustStorePass == null) {
 			throw new InternalErrorException("TrustStorePath and TrustStorePass must be filled. Please look into configuration file.");
 		}
+
 		
 		//set necessary keystore properties - using a p12 file
 		System.setProperty("javax.net.ssl.keyStore", keyStore);
