@@ -338,32 +338,6 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 	 */
 	private InputStream createTwoWaySSLConnection(String uri) throws IOException, InternalErrorException {
 		if(uri == null || uri.isEmpty()) throw new InternalErrorException("Uri must be filled, can't be null or empty.");
-		
-		//KeyStore data
-		String keyStore =  getAttributes().get("keyStore");
-		String keyStorePass = getAttributes().get("keyStorePass");
-		String keyStoreType = getAttributes().get("keyStoreType");
-		if(keyStore == null || keyStorePass == null || keyStoreType == null) {
-			throw new InternalErrorException("KeystorePath, KeystorePass and KeystoreType must be filled. Please look into configuration file.");
-		}
-		
-		//TrustStore data
-		String trustStore = getAttributes().get("trustStore");
-		String trustStorePass = getAttributes().get("trustStorePass");
-		if(trustStore == null || trustStorePass == null) {
-			throw new InternalErrorException("TrustStorePath and TrustStorePass must be filled. Please look into configuration file.");
-		}
-		
-		//set necessary keystore properties - using a p12 file
-		System.setProperty("javax.net.ssl.keyStore", keyStore);
-		System.setProperty("javax.net.ssl.keyStorePassword", keyStorePass);
-		System.setProperty("javax.net.ssl.keyStoreType", keyStoreType);       
-
-		//set necessary truststore properties - using JKS
-		System.setProperty("javax.net.ssl.trustStore", trustStore);
-		System.setProperty("javax.net.ssl.trustStorePassword", trustStorePass);
-		// register a https protocol handler  - this may be required for previous JDK versions
-		System.setProperty("java.protocol.handler.pkgs","com.sun.net.ssl.internal.www.protocol");
 
 		//prepare sslFactory
 		SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
