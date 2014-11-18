@@ -18,6 +18,7 @@ import cz.metacentrum.perun.core.api.exceptions.ExtSourceNotAssignedException;
 import cz.metacentrum.perun.core.api.exceptions.ExtSourceNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.ExtSourceUnsupportedOperationException;
 import cz.metacentrum.perun.core.api.exceptions.InternalErrorException;
+import java.util.Map;
 
 /**
  * @author Michal Prochazka <michalp@ics.muni.cz>
@@ -163,6 +164,18 @@ public interface ExtSourcesManagerBl {
 	 * @throws ExtSourceUnsupportedOperationException
 	 */
 	Candidate getCandidate(PerunSession perunSession, ExtSource source, String login) throws InternalErrorException, ExtSourceNotExistsException, CandidateNotExistsException,ExtSourceUnsupportedOperationException;
+
+	/**
+	 * Get candidate for ExtSource by data from subject (data was already get from extSource and only need to create new Candidate)
+	 *
+	 * @param sess
+	 * @param source
+	 * @param subject
+	 *
+	 * @return a Candidate object
+	 * @throws InternalErrorException
+	 */
+	Candidate getCandidate(PerunSession sess, ExtSource source, Map<String, String> subject) throws InternalErrorException;
 
 	void checkExtSourceExists(PerunSession sess, ExtSource extSource) throws InternalErrorException, ExtSourceNotExistsException;
 

@@ -157,6 +157,97 @@ public class ExtSourcesManagerBlImpl implements ExtSourcesManagerBl {
 		this.perunBl = perunBl;
 	}
 
+	public Candidate getCandidate(PerunSession sess, ExtSource source, Map<String, String> subject) throws InternalErrorException {
+		if(subject.isEmpty()) {
+			throw new InternalErrorException("Missing data for getting candidate.");
+		}
+		//get candidate login
+		String login = subject.get("login");
+		if(login == null || login.isEmpty()) {
+			throw new InternalErrorException("Missing login of candidate.");
+		}
+
+		// New Canddate
+		Candidate candidate = new Candidate();
+
+		// Prepare userExtSource object
+		UserExtSource userExtSource = new UserExtSource();
+		userExtSource.setExtSource(source);
+		userExtSource.setLogin(login);
+
+		// Set the userExtSource
+		candidate.setUserExtSource(userExtSource);
+
+		candidate.setFirstName(subject.get("firstName"));
+		candidate.setLastName(subject.get("lastName"));
+		candidate.setMiddleName(subject.get("middleName"));
+		candidate.setTitleAfter(subject.get("titleAfter"));
+		candidate.setTitleBefore(subject.get("titleBefore"));
+
+		// Additional userExtSources
+		List<UserExtSource> additionalUserExtSources = new ArrayList<UserExtSource>();
+
+		// Filter attributes
+		Map<String, String> attributes = new HashMap<String, String>();
+		for (String attrName: subject.keySet()) {
+			// Allow only users and members attributes
+			// FIXME volat metody z attributesManagera nez kontrolovat na zacatek jmena
+			if (attrName.startsWith(AttributesManager.NS_MEMBER_ATTR) || attrName.startsWith(AttributesManager.NS_USER_ATTR)) {
+				attributes.put(attrName, subject.get(attrName));
+			} else if (attrName.startsWith(ExtSourcesManagerImpl.USEREXTSOURCEMAPPING)) {
+				// Add additionalUserExtSources
+				String[] userExtSourceRaw =  subject.get(attrName).split("\\|"); // Entry contains extSourceName|extSourceType|extLogin[|LoA]
+				log.debug("Processing additionalUserExtSource {}",  subject.get(attrName));
+
+				String additionalExtSourceName = userExtSourceRaw[0];
+				String additionalExtSourceType = userExtSourceRaw[1];
+				String additionalExtLogin = userExtSourceRaw[2];
+				int additionalExtLoa = -1;
+				if (userExtSourceRaw[3] != null) {
+					try {
+						additionalExtLoa = Integer.parseInt(userExtSourceRaw[3]);
+					} catch (NumberFormatException e) {
+						throw new InternalErrorException("Candidate with login [" + login + "] has wrong LoA '" + userExtSourceRaw[3] + "'.");
+					}
+				}
+
+				ExtSource additionalExtSource;
+
+				if (additionalExtSourceName == null || additionalExtSourceName.isEmpty() ||
+						additionalExtSourceType == null || additionalExtSourceType.isEmpty() ||
+						additionalExtLogin == null || additionalExtLogin.isEmpty()) {
+					log.error("User with login {} has invalid additional userExtSource defined {}.", login, userExtSourceRaw);
+				} else {
+					try {
+						// Try to get extSource, with full extSource object (containg ID)
+						additionalExtSource = getPerunBl().getExtSourcesManagerBl().getExtSourceByName(sess, additionalExtSourceName);
+					} catch (ExtSourceNotExistsException e) {
+						try {
+							// Create new one if not exists
+							additionalExtSource = new ExtSource(additionalExtSourceName, additionalExtSourceType);
+							additionalExtSource = getPerunBl().getExtSourcesManagerBl().createExtSource(sess, additionalExtSource);
+						} catch (ExtSourceExistsException e1) {
+							throw new ConsistencyErrorException("Creating existin extSource: " + additionalExtSourceName);
+						}
+					}
+					if (additionalExtLoa != -1) {
+						additionalUserExtSources.add(new UserExtSource(additionalExtSource, additionalExtLoa, additionalExtLogin));
+					} else {
+						additionalUserExtSources.add(new UserExtSource(additionalExtSource, additionalExtLogin));
+					}
+				}
+			}
+		}
+
+		candidate.setAdditionalUserExtSources(additionalUserExtSources);
+		candidate.setAttributes(attributes);
+
+
+		log.debug("CANDIDATE-INFO: " + "1]'" + candidate.getFirstName() + "' " + "2]'" + candidate.getLastName() + "' 3]'" + candidate.getUserExtSource().getLogin() + "' 4]" + candidate.getAttributes().get("urn:perun:member:attribute-def:def:mail") + "' --> END");
+
+		return candidate;
+	}
+
 	@Override
 	public Candidate getCandidate(PerunSession sess, ExtSource source, String login) throws InternalErrorException, ExtSourceNotExistsException, CandidateNotExistsException, ExtSourceUnsupportedOperationException  {
 		// New Canddate

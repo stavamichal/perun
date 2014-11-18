@@ -261,15 +261,16 @@ public class VosManagerBlImpl implements VosManagerBl {
 
 					// Get Canddate
 					Candidate candidate;
-					try {
-						candidate = getPerunBl().getExtSourcesManagerBl().getCandidate(sess, source, extLogin);
-					} catch (ExtSourceNotExistsException e) {
+					//try {
+						//candidate = getPerunBl().getExtSourcesManagerBl().getCandidate(sess, source, extLogin);
+						candidate = getPerunBl().getExtSourcesManagerBl().getCandidate(sess, source, s);
+					/*} catch (ExtSourceNotExistsException e) {
 						throw new ConsistencyErrorException("Getting candidate from non-existing extSource " + source, e);
 					} catch (CandidateNotExistsException e) {
 						throw new ConsistencyErrorException("findSubjects returned that candidate, but getCandidate cannot find him using login " + extLogin, e);
 					} catch (ExtSourceUnsupportedOperationException e) {
 						throw new InternalErrorException("extSource supports findSubjects but not getCandidate???", e);
-					}
+					}*/
 
 					try {
 						getPerunBl().getMembersManagerBl().getMemberByUserExtSources(sess, vo, candidate.getUserExtSources());
