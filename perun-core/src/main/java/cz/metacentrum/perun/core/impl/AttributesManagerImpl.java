@@ -896,20 +896,70 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		}
 	}
 
-
+	//Temproraty changed for cache test purpose
 	public List<Attribute> getAttributes(PerunSession sess, Facility facility, User user) throws InternalErrorException {
+
+		List<String> namespaces = new ArrayList<>();
+		namespaces.add(AttributesManager.NS_USER_FACILITY_ATTR_DEF);
+		namespaces.add(AttributesManager.NS_USER_FACILITY_ATTR_OPT);
+
+		MapSqlParameterSource parameters = new MapSqlParameterSource();
+		parameters.addValue("facilityId", facility.getId());
+		parameters.addValue("userId", user.getId());
+		parameters.addValue("namespaces", namespaces);
+
+		//get all Ids of attributes
+		List<Integer> ids;
 		try {
-			return jdbc.query("select " + getAttributeMappingSelectQuery("usr_fac") + " from attr_names " +
+			ids = jdbc.query("select usr_fac.attr_id as id from attr_names " +
 					"left join    user_facility_attr_values     usr_fac      on id=usr_fac.attr_id " +
 					"where namespace in (?,?) and (usr_fac.attr_value is not null or usr_fac.attr_value_text is not null)",
-					new AttributeRowMapper(sess, this, null),
-					AttributesManager.NS_USER_FACILITY_ATTR_DEF, AttributesManager.NS_USER_FACILITY_ATTR_OPT);
-		} catch(EmptyResultDataAccessException ex) {
-			log.debug("No attribute for user-facility combination exists.");
-			return new ArrayList<Attribute>();
-		} catch(RuntimeException ex) {
+					Utils.ID_MAPPER, AttributesManager.NS_USER_FACILITY_ATTR_DEF, AttributesManager.NS_USER_FACILITY_ATTR_OPT);
+		} catch (EmptyResultDataAccessException ex) {
+			ids = new ArrayList<>();
+		} catch (RuntimeException ex) {
 			throw new InternalErrorException(ex);
 		}
+
+		List<Attribute> returnedAttributes = new ArrayList<>();
+		List<String> missingAttributes = new ArrayList<>();
+
+		//add those attribtues which are in cache to the returned list and prepare those which are not
+		List<Attribute> returnedAttrs = new ArrayList<>();
+		boolean fromDB = false;
+		for(Integer id: ids) {
+			Attribute attribute = cacheManager.getAttributeByIdFromCacheInTransaction(facility, user, id);
+			if(attribute != null) {
+				returnedAttributes.add(attribute);
+			} else {
+				fromDB = true;
+				returnedAttributes.clear();
+				break;
+			}
+		}
+		
+		//get all attributes which are not in cache
+		if(fromDB) {
+			try {
+				returnedAttributes = this.namedParameterJdbcTemplate.query("select " + getAttributeMappingSelectQuery("usr_fac") + " from attr_names " +
+						"left join    user_facility_attr_values     usr_fac      on id=usr_fac.attr_id " +
+						"where namespace in ( :namespaces ) and (usr_fac.attr_value is not null or usr_fac.attr_value_text is not null)",
+						parameters, new AttributeRowMapper(sess, this, null));
+			} catch(EmptyResultDataAccessException ex) {
+				returnedAttributes =  new ArrayList<Attribute>();
+			} catch(RuntimeException ex) {
+				throw new InternalErrorException(ex);
+			}
+
+			//Add missing attributes to the cache and add them also to returned list
+			for(Attribute attr: returnedAttributes) {
+				cacheManager.addAttributeToCacheInTransaction(facility, user, attr);
+			}
+			
+		}
+
+		//return list of attributes
+		return returnedAttributes;
 	}
 
 	public List<Attribute> getUserFacilityAttributesForAnyUser(PerunSession sess, Facility facility) throws InternalErrorException {

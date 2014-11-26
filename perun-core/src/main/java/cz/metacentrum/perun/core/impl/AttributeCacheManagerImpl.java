@@ -10,6 +10,7 @@ import cz.metacentrum.perun.core.api.Attribute;
 import cz.metacentrum.perun.core.api.AttributeDefinition;
 import cz.metacentrum.perun.core.api.AttributeHolders;
 import cz.metacentrum.perun.core.api.Facility;
+import cz.metacentrum.perun.core.api.Pair;
 import cz.metacentrum.perun.core.api.PerunBean;
 import cz.metacentrum.perun.core.api.User;
 import cz.metacentrum.perun.core.implApi.AttributeCacheManagerImplApi;
@@ -42,6 +43,11 @@ public class AttributeCacheManagerImpl implements AttributeCacheManagerImplApi{
 		applicationCache.clear();
 	}
 
+	public synchronized void addAttributesToCache(AttributeHolders attributeHolders, List<Attribute> attributes) {
+		for(Attribute attr: attributes) {
+			this.addAttributeToCache(attributeHolders, attr);
+		}
+	}
 
 	public synchronized void addAttributeToCache(AttributeHolders attributeHolders, Attribute attribute) {
 		if (applicationCache.get(attributeHolders)!=null) {
@@ -51,6 +57,12 @@ public class AttributeCacheManagerImpl implements AttributeCacheManagerImplApi{
 			Map<String,AttributeDefinition> mapOfAttributeHoldersAttributes = new HashMap<>();
 			mapOfAttributeHoldersAttributes.put(attribute.getName(), attribute);
 			applicationCache.put(attributeHolders, mapOfAttributeHoldersAttributes);
+		}
+	}
+
+	public void addAttributesToCacheInTransaction(PerunBean primaryHolder, PerunBean secondaryHolder, List<Attribute> attributes) {
+		for(Attribute attr: attributes) {
+			this.addAttributeToCacheInTransaction(primaryHolder, secondaryHolder, attr);
 		}
 	}
 
@@ -72,6 +84,12 @@ public class AttributeCacheManagerImpl implements AttributeCacheManagerImplApi{
 			}
 		} else {
 			this.addAttributeToCache(attributeHolders, attribute);
+		}
+	}
+
+	public void addAttributeToCacheInTransaction(PerunBean primaryHolder, List<Attribute> attributes){
+		for(Attribute attr: attributes) {
+			this.addAttributeToCacheInTransaction(primaryHolder, null, attr);
 		}
 	}
 
