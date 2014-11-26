@@ -1,6 +1,7 @@
 package cz.metacentrum.perun.core.impl;
 
 import cz.metacentrum.perun.core.api.Attribute;
+import cz.metacentrum.perun.core.api.AttributeDefinition;
 import cz.metacentrum.perun.core.api.ExtSourcesManager;
 import cz.metacentrum.perun.core.api.Group;
 import cz.metacentrum.perun.core.api.Member;
@@ -11,6 +12,7 @@ import cz.metacentrum.perun.core.api.User;
 import cz.metacentrum.perun.core.api.Vo;
 import cz.metacentrum.perun.core.bl.PerunBl;
 import cz.metacentrum.perun.core.api.AttributesManager;
+import cz.metacentrum.perun.core.api.Facility;
 import cz.metacentrum.perun.core.api.Resource;
 import cz.metacentrum.perun.core.api.UserExtSource;
 import java.io.BufferedWriter;
@@ -68,6 +70,12 @@ public class Main {
 		perun.getAuditer().setLastProcessedId("ldapcConsumer", LastMessageAfterInitializingData);
 	}
 
+	//Main for testing attributes cache
+	public Main() throws Exception {
+		testCache();
+		System.out.println("Cache was tested successfully.");
+	}
+
 	public static void main(String[] args) throws Exception {
 		if(args.length == 0 || args.length > 2) {
 			System.out.println(badUsage(null));
@@ -84,10 +92,53 @@ public class Main {
 				main = new Main(null);
 			}
 			writer.close();
+		} else if(args[0].equals("-test")) {
+			Main main = new Main();
 		} else {
 			System.out.println(badUsage(args[0]));
 			System.out.println(help());
 		}
+	}
+
+	private void testCache() throws Exception {
+
+		//Test of getting non-virtual attribute before cache is initialized
+		User user = perun.getUsersManagerBl().getUserById(perunSession, 6701); // Michal Stava
+		long startTime;
+		long endTime;
+		AttributeDefinition attrDef = perun.getAttributesManagerBl().getAttributeDefinitionById(perunSession, 1364); //user:def:address
+		startTime = System.currentTimeMillis();
+		Attribute attr = perun.getAttributesManagerBl().getAttribute(perunSession, user, attrDef.getName());
+		endTime = System.currentTimeMillis();
+		System.out.println("Non-virtual attribute user-def-address was get in: " + (startTime-endTime) + " ms before initializing");
+
+		//Test of getting non-virtual attribute after cache is initialized
+		startTime = System.currentTimeMillis();
+		attr = perun.getAttributesManagerBl().getAttribute(perunSession, user, attrDef.getName());
+		endTime = System.currentTimeMillis();
+		System.out.println("Non-virtual attribute user-def-address was get in: " + (startTime-endTime) + " ms after initializing");
+
+		//Test of getting 1 virtual attribute before cache is initialized
+		Facility facility = perun.getFacilitiesManagerBl().getFacilityById(perunSession, 2662); //acct.metacentrum.cz
+		attrDef = perun.getAttributesManagerBl().getAttributeDefinitionById(perunSession, 1364); //user-fac:virt:login
+		startTime = System.currentTimeMillis();
+		attr = perun.getAttributesManagerBl().getAttribute(perunSession, facility, user, attrDef.getName());
+		endTime = System.currentTimeMillis();
+		System.out.println("Virtual attribute user:fac-virt-login was get in: " + (startTime-endTime) + " ms before initializing");
+
+		//Test of getting 1 virtual attribute after cache is initialized
+		startTime = System.currentTimeMillis();
+		attr = perun.getAttributesManagerBl().getAttribute(perunSession, facility, user, attrDef.getName());
+		endTime = System.currentTimeMillis();
+		System.out.println("Virtual attribute user:fac-virt-login was get in: " + (startTime-endTime) + " ms after initializing");
+
+		//using method getData on some data
+
+		// x * using of getAttribute from DB (every call is one sql query) (where x is something big like 1000 or more) - this should be much quicker with cache
+
+		// x * attribute getting by one query from DB (the same like the one before but now only in 1 query) - this should be almost same quick with cache like with no cache
+
+		// x * write attributes to DB - because we need to know if cache slows these queries
 	}
 
 	private static String badUsage(String badArgument) {
