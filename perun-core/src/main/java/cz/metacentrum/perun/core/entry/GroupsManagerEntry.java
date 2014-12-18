@@ -39,6 +39,7 @@ import cz.metacentrum.perun.core.api.exceptions.NotServiceUserExpectedException;
 import cz.metacentrum.perun.core.api.exceptions.ParentGroupNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.PrivilegeException;
 import cz.metacentrum.perun.core.api.exceptions.RelationExistsException;
+import cz.metacentrum.perun.core.api.exceptions.SlaveCantWriteToDatabaseException;
 import cz.metacentrum.perun.core.api.exceptions.UserNotAdminException;
 import cz.metacentrum.perun.core.api.exceptions.UserNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.VoNotExistsException;
@@ -783,7 +784,7 @@ public class GroupsManagerEntry implements GroupsManager {
 	}
 
 	public void forceGroupSynchronization(PerunSession sess, Group group) throws InternalErrorException,
-				 GroupNotExistsException, PrivilegeException, GroupSynchronizationAlreadyRunningException {
+				 GroupNotExistsException, PrivilegeException, GroupSynchronizationAlreadyRunningException, SlaveCantWriteToDatabaseException {
 					 Utils.checkPerunSession(sess);
 					 getGroupsManagerBl().checkGroupExists(sess, group);
 

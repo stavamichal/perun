@@ -95,6 +95,40 @@ public class Utils {
 	}
 
 	/**
+	 * This method returns false if database is type slave, if database is type master or
+	 * type can't be find, returns true (because master not need to be set)
+	 *
+	 * @return true if this instance of perun is Master or false if this instance is slave
+	 */
+	public static boolean isThisMaster() {
+		String databaseLevel = null;
+		try {
+	  		 databaseLevel = Utils.getPropertyFromConfiguration("perun.database.level");
+		} catch (InternalErrorException ex) {
+			//can't find database type, return false and log error
+			log.error("Can't get type of database, set to master!");
+			return true;
+		}
+
+		//if this value is still null, return false
+		if(databaseLevel == null || databaseLevel.isEmpty()) {
+			log.error("Can't get type of database, set to master!");
+			return true;
+		}
+		
+		if(databaseLevel.equals("master")) {
+			log.debug("Database is set to master!");
+			return true;
+		} else if (databaseLevel.equals("slave")) {
+			log.debug("Database is set to slave!");
+			return false;
+	  } else {
+			log.error("Wrong type of database level, can be only master/slave and is: '" + databaseLevel + "'. Set to master!");
+			return true;
+		}
+	}
+
+	/**
 	 * Gets particular property from perun.properties file.
 	 *
 	 * @param propertyName name of the property

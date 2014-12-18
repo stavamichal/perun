@@ -4521,7 +4521,13 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 		attributes.add(attr);
 
 		for(AttributeDefinition attribute : attributes) {
-			if(!checkAttributeExistsForInitialize(attribute)) createAttributeExistsForInitialize(attribute);
+			if(!checkAttributeExistsForInitialize(attribute)) {
+				if(Utils.isThisMaster()) {
+					createAttributeExistsForInitialize(attribute);
+				} else {
+					log.error("Attribute definition " + attribute + " missing, but can't be create because this instance is only slave.");
+				}
+			}
 		}
 		log.debug("AttributesManagerImpl initialize ended.");
 	}

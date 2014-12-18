@@ -47,6 +47,7 @@ import cz.metacentrum.perun.core.bl.UsersManagerBl;
 import cz.metacentrum.perun.core.bl.VosManagerBl;
 import cz.metacentrum.perun.core.impl.Auditer;
 import cz.metacentrum.perun.core.impl.PerunSessionImpl;
+import cz.metacentrum.perun.core.impl.Utils;
 
 /**
  * Implementation of Perun.
@@ -390,7 +391,11 @@ public class PerunBlImpl implements PerunBl {
 	 * Call managers' initialization methods
 	 */
 	public void initialize() throws InternalErrorException {
-		this.extSourcesManagerBl.initialize(this.getPerunSession());
+		if(Utils.isThisMaster()) {
+			this.extSourcesManagerBl.initialize(this.getPerunSession());
+		} else {
+			log.debug("Do not create extSources, because this server can't write queries. It is slave.");
+		}
 	}
 
 	/**

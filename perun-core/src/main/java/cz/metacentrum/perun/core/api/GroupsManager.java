@@ -21,6 +21,7 @@ import cz.metacentrum.perun.core.api.exceptions.NotServiceUserExpectedException;
 import cz.metacentrum.perun.core.api.exceptions.ParentGroupNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.PrivilegeException;
 import cz.metacentrum.perun.core.api.exceptions.RelationExistsException;
+import cz.metacentrum.perun.core.api.exceptions.SlaveCantWriteToDatabaseException;
 import cz.metacentrum.perun.core.api.exceptions.UserNotAdminException;
 import cz.metacentrum.perun.core.api.exceptions.UserNotExistsException;
 import cz.metacentrum.perun.core.api.exceptions.VoNotExistsException;
@@ -678,8 +679,9 @@ public interface GroupsManager {
 	 * @throws GroupNotExistsException
 	 * @throws PrivilegeException
 	 * @throws GroupSynchronizationAlreadyRunningException
+	 * @throws SlaveCantWriteToDatabaseException
 	 */
-	void forceGroupSynchronization(PerunSession sess, Group group) throws InternalErrorException, GroupNotExistsException, PrivilegeException, GroupSynchronizationAlreadyRunningException;
+	void forceGroupSynchronization(PerunSession sess, Group group) throws InternalErrorException, GroupNotExistsException, PrivilegeException, SlaveCantWriteToDatabaseException, GroupSynchronizationAlreadyRunningException;
 
 	/**
 	 * Synchronize all groups which have enabled synchronization. This method is run by the scheduler every 5 minutes.

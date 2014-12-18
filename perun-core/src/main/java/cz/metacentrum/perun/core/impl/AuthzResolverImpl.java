@@ -144,8 +144,12 @@ public class AuthzResolverImpl implements AuthzResolverImplApi {
 		for (Role role: Role.values()) {
 			try {
 				if (0 == jdbc.queryForInt("select count(*) from roles where name=?", role.getRoleName())) {
-					int newId = Utils.getNewId(jdbc, "roles_id_seq");
-					jdbc.update("insert into roles (id, name) values (?,?)", newId, role.getRoleName());
+					if(Utils.isThisMaster()) {
+						int newId = Utils.getNewId(jdbc, "roles_id_seq");
+						jdbc.update("insert into roles (id, name) values (?,?)", newId, role.getRoleName());
+					} else {
+						log.error("Role " + role + " is missing, but can't be add because this instance is slave.");
+					}
 				}
 			} catch (RuntimeException e) {
 				throw new InternalErrorException(e);

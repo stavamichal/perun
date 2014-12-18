@@ -1291,7 +1291,10 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	 * @param sess
 	 * @param group
 	 */
-	public void forceGroupSynchronization(PerunSession sess, Group group) throws GroupSynchronizationAlreadyRunningException {
+	public void forceGroupSynchronization(PerunSession sess, Group group) throws GroupSynchronizationAlreadyRunningException, SlaveCantWriteToDatabaseException {
+		if(!Utils.isThisMaster()) {
+			throw new SlaveCantWriteToDatabaseException("Can't force group synchronization on read only version of database.");
+		}
 		// First check if the group is not currently in synchronization process
 		if (groupSynchronizerThreads.containsKey(group.getId()) && groupSynchronizerThreads.get(group.getId()).getState() != Thread.State.TERMINATED) {
 			throw new GroupSynchronizationAlreadyRunningException(group);
@@ -1315,6 +1318,10 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	 * @throws InternalErrorException
 	 */
 	public void synchronizeGroups(PerunSession sess) throws InternalErrorException {
+		if(!Utils.isThisMaster()) {
+			log.debug("This instance is slave, skip group synchronization at all.");
+			return;
+		}
 		Random rand = new Random();
 
 		// Firstly remove all terminated threads
@@ -1416,6 +1423,11 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 		}
 
 		public void run() {
+			if(!Utils.isThisMaster()) {
+				log.debug("Can't synchronize group, because this instance is slave. Skip synchronization of group:" + group);
+				return;
+			}
+			
 			//if some exception was thrown during synchronization
 			boolean exceptionThrown = false;
 			//text of exception if was thrown

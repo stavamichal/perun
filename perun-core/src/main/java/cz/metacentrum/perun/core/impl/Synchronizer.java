@@ -50,20 +50,26 @@ public class Synchronizer {
 	}
 
 	public void synchronizeGroups() {
-		if (synchronizeGroupsRunning.compareAndSet(false, true)) {
-			try {
-				log.debug("Synchronizer starting synchronizing the groups");
-				this.perunBl.getGroupsManagerBl().synchronizeGroups(this.sess);
-				if (!synchronizeGroupsRunning.compareAndSet(true, false)) {
-					log.error("Synchonizer: group synchronization out of sync, reseting.");
+		if(!Utils.isThisMaster()) {
+			log.error("Cannot synchronize groups, because this instance is slave.");
+			synchronizeGroupsRunning.set(false);
+			
+		} else {
+			if (synchronizeGroupsRunning.compareAndSet(false, true)) {
+				try {
+					log.debug("Synchronizer starting synchronizing the groups");
+					this.perunBl.getGroupsManagerBl().synchronizeGroups(this.sess);
+					if (!synchronizeGroupsRunning.compareAndSet(true, false)) {
+						log.error("Synchonizer: group synchronization out of sync, reseting.");
+						synchronizeGroupsRunning.set(false);
+					}
+				} catch (InternalErrorException e) {
+					log.error("Cannot synchronize groups:", e);
 					synchronizeGroupsRunning.set(false);
 				}
-			} catch (InternalErrorException e) {
-				log.error("Cannot synchronize groups:", e);
-				synchronizeGroupsRunning.set(false);
+			} else {
+				log.debug("Synchronizer: group synchronization currently running.");
 			}
-		} else {
-			log.debug("Synchronizer: group synchronization currently running.");
 		}
 	}
 
@@ -72,6 +78,11 @@ public class Synchronizer {
 	 */
 	public void checkMembersState() {
 		Date now = new Date();
+		
+		if(!Utils.isThisMaster()) {
+			log.debug("Can't check and set members states because of this instance is slave.");
+			return;
+		}
 
 		// Get all VO's
 		try {
