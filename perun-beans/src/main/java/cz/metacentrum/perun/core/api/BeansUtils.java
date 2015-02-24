@@ -527,7 +527,7 @@ public class BeansUtils {
 	 * @return value of the property
 	 */
 	public static String getPropertyFromConfiguration(String propertyName) throws InternalErrorException {
-		log.trace("Entering getPropertyFromConfiguration: propertyName='" + propertyName + "'");
+		//log.trace("Entering getPropertyFromConfiguration: propertyName='" + propertyName + "'");
 		notNull(propertyName, "propertyName");
 
 		if(BeansUtils.properties == null) {
@@ -561,7 +561,7 @@ public class BeansUtils {
 	 * @return value of the property
 	 */
 	public static String getPropertyFromCustomConfiguration(String propertyFile, String propertyName) throws InternalErrorException {
-		log.trace("Entering getPropertyFromCustomConfiguration: propertyFile='" +  propertyFile + "' propertyName='" +  propertyName + "'");
+		//log.trace("Entering getPropertyFromCustomConfiguration: propertyFile='" +  propertyFile + "' propertyName='" +  propertyName + "'");
 		notNull(propertyName, "propertyName");
 		notNull(propertyFile, "propertyFile");
 
@@ -592,7 +592,7 @@ public class BeansUtils {
 	 * @return all properties with values
 	 */
 	public static Map<String, String> getAllPropertiesFromCustomConfiguration(String propertyFile) throws InternalErrorException {
-		log.trace("Entering getAllPropertiesFromCustomConfiguration: propertyFile='" + propertyFile + "'");
+		//log.trace("Entering getAllPropertiesFromCustomConfiguration: propertyFile='" + propertyFile + "'");
 		notNull(propertyFile, "propertyFile");
 
 		// Load properties file with configuration
