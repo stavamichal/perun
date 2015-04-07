@@ -51,6 +51,16 @@ public interface VosManagerImplApi {
 	 */
 	void deleteVo(PerunSession perunSession, Vo vo) throws InternalErrorException;
 
+	/**
+	 *	Create new vo and failed on constraint if needed.
+	 * 
+	 * @param sess
+	 * @param vo
+	 * @param failed
+	 * @return
+	 * @throws InternalErrorException 
+	 */
+	Vo createVo(PerunSession sess, Vo vo, boolean failed) throws InternalErrorException;
 
 	/**
 	 * Create new VO.

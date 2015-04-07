@@ -400,6 +400,17 @@ public class Auditer {
 		}
 	}
 
+	public List<AuditMessage> getMessageForParser(int minExcept, int maxInclude) throws InternalErrorException {
+		try {
+			return jdbc.query("select " + auditMessageMappingSelectQuery + " from auditer_log where id>? and id<=?",
+					AUDITMESSAGE_MAPPER_FOR_PARSER, minExcept, maxInclude);
+		} catch (EmptyResultDataAccessException ex) {
+			return new ArrayList<AuditMessage>();
+		} catch (RuntimeException err) {
+			throw new InternalErrorException(err);
+		}
+	}
+
 
 	public void setLastProcessedId(String consumerName, int lastProcessedId) throws InternalErrorException {
 		try {

@@ -36,6 +36,56 @@ import cz.metacentrum.perun.core.api.exceptions.VoNotExistsException;
 public interface VosManagerBl {
 
 	/**
+	 * THIS IS MAIN TRANSACTION WHICH CALLING INNER ONE
+	 *
+	 * MAIN OK
+	 * INNER OK
+	 * 
+	 * @throws InternalErrorException 
+	 */
+	public void test1(PerunSession sess) throws InternalErrorException;
+
+	/**
+	 * THIS IS MAIN TRANSACTION WHICH CALLING INNER ONE
+	 *
+	 * MAIN OK
+	 * INNER ROLLBACK
+	 *
+	 * @throws InternalErrorException
+	 */
+	public void test2(PerunSession sess) throws InternalErrorException;
+
+	/**
+	 * THIS IS MAIN TRANSACTION WHICH CALLING INNER ONE
+	 *
+	 * MAIN ROLLBACK
+	 * INNER OK
+	 *
+	 * @throws InternalErrorException
+	 */
+	public void test3(PerunSession sess) throws InternalErrorException;
+
+	/**
+	 * THIS IS MAIN TRANSACTION WHICH CALLING INNER ONE
+	 *
+	 * MAIN ROLLBACK
+	 * INNER ROLLBACK
+	 *
+	 * @throws InternalErrorException
+	 */
+	public void test4(PerunSession sess) throws InternalErrorException;
+
+	/**
+	 * INNER TRANSACTION
+	 *
+	 * can failed if boolean true
+	 *
+	 * @param failed
+	 * @throws InternalErrorException
+	 */
+	public void innerTransaction(PerunSession sess, boolean failed) throws InternalErrorException;
+
+	/**
 	 * Get list of all Vos.
 	 *
 	 * @param perunSession

@@ -12,6 +12,13 @@ http://www.springframework.org/schema/aop http://www.springframework.org/schema/
 	<import resource="classpath:perun-transaction-manager.xml"/>
 
 	<aop:config>
+		<!-- SPECIAL TRANSACTIONS -->
+		<aop:advisor advice-ref="txAdviceNestedTransaction" pointcut="execution(* cz.metacentrum.perun.core.blImpl.VosManagerBlImpl.innerTransaction(..))"/>
+		<aop:advisor advice-ref="txAdviceNestedTransaction" pointcut="execution(* cz.metacentrum.perun.core.blImpl.VosManagerBlImpl.test1(..))"/>
+		<aop:advisor advice-ref="txAdviceNestedTransaction" pointcut="execution(* cz.metacentrum.perun.core.blImpl.VosManagerBlImpl.test2(..))"/>
+		<aop:advisor advice-ref="txAdviceNestedTransaction" pointcut="execution(* cz.metacentrum.perun.core.blImpl.VosManagerBlImpl.test3(..))"/>
+		<aop:advisor advice-ref="txAdviceNestedTransaction" pointcut="execution(* cz.metacentrum.perun.core.blImpl.VosManagerBlImpl.test4(..))"/>
+		<!--END OF SPECIAL TRANSACTIONS -->
 		<aop:advisor advice-ref="txAdviceReadOnly" pointcut="execution(* cz.metacentrum.perun.core.entry.ServicesManagerEntry.getHierarchicalData(..))"/>
 		<aop:advisor advice-ref="txAdviceReadOnly" pointcut="execution(* cz.metacentrum.perun.core.entry.ServicesManagerEntry.getDataWithGroups(..))"/>
 		<aop:advisor advice-ref="txAdviceNestedTransaction" pointcut="execution(* cz.metacentrum.perun.core.entry.*.*(..))"/>

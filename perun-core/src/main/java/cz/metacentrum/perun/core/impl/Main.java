@@ -11,8 +11,10 @@ import cz.metacentrum.perun.core.api.User;
 import cz.metacentrum.perun.core.api.Vo;
 import cz.metacentrum.perun.core.bl.PerunBl;
 import cz.metacentrum.perun.core.api.AttributesManager;
+import cz.metacentrum.perun.core.api.AuditMessage;
 import cz.metacentrum.perun.core.api.Resource;
 import cz.metacentrum.perun.core.api.UserExtSource;
+import cz.metacentrum.perun.core.api.exceptions.InternalErrorException;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -77,6 +79,112 @@ public class Main {
 		perun.getAuditer().setLastProcessedId("ldapcConsumer", LastMessageAfterInitializingData);
 	}
 
+	public Main(int testNumber) throws Exception {
+		try {
+			this.springCtx = new ClassPathXmlApplicationContext("perun-beans.xml", "perun-datasources.xml", "perun-transaction-manager.xml");
+			this.perun = springCtx.getBean("perun", PerunBl.class);
+			this.perunSession = perun.getPerunSession(pp);
+		} catch (Exception e) {
+			log.error("Application context loading error.", e);
+			throw e;
+		}
+
+		if(testNumber == 1) {
+			System.out.println("--START--");
+			System.out.println("GET MESSAGE ID START");
+			int lastIdBefore = perun.getAuditer().getLastMessageId();
+			System.out.println("GET MESSAGE ID STOP");
+			try {
+				System.out.println("TEST1 -- START");
+				perun.getVosManagerBl().test1(perunSession);
+			} catch (InternalErrorException ex) {
+				//this is ok, do not throw an exception there
+			}
+			System.out.println("TEST1 -- STOP");
+			System.out.println("GET MESSAGE ID START");
+			int lastIdAfter = perun.getAuditer().getLastMessageId();
+			System.out.println("GET MESSAGE ID STOP");
+			System.out.println("GET MESSAGES");
+			List<AuditMessage> messages = perun.getAuditer().getMessageForParser(lastIdBefore, lastIdAfter);
+			System.out.println("----------------------------------------------");
+			System.out.println("TYTO ZPRAVY SE ULOZILI DO DB:");
+			for(AuditMessage a: messages) {
+				System.out.println(a);
+			}
+			System.out.println("----------------------------------------------");
+
+		} else if(testNumber == 2) {
+			System.out.println("--START--");
+			System.out.println("GET MESSAGE ID START");
+			int lastIdBefore = perun.getAuditer().getLastMessageId();
+			System.out.println("GET MESSAGE ID STOP");
+			try {
+				System.out.println("TEST2 -- START");
+				perun.getVosManagerBl().test2(perunSession);
+		 } catch (InternalErrorException ex) {
+				//this is ok, do not throw an exception there
+			}
+			System.out.println("TEST1 -- STOP");
+			System.out.println("GET MESSAGE ID START");
+			int lastIdAfter = perun.getAuditer().getLastMessageId();
+			System.out.println("GET MESSAGE ID STOP");
+			System.out.println("GET MESSAGES");
+			List<AuditMessage> messages = perun.getAuditer().getMessageForParser(lastIdBefore, lastIdAfter);
+			System.out.println("----------------------------------------------");
+			System.out.println("TYTO ZPRAVY SE ULOZILI DO DB:");
+			for(AuditMessage a: messages) {
+				System.out.println(a);
+			}
+			System.out.println("----------------------------------------------");
+		} else if(testNumber == 3) {
+			System.out.println("--START--");
+			System.out.println("GET MESSAGE ID START");
+			int lastIdBefore = perun.getAuditer().getLastMessageId();
+			System.out.println("GET MESSAGE ID STOP");
+			try {
+				System.out.println("TEST3 -- START");
+				perun.getVosManagerBl().test3(perunSession);
+			} catch (InternalErrorException ex) {
+				//this is ok, do not throw an exception there
+			}
+			System.out.println("TEST1 -- STOP");
+			System.out.println("GET MESSAGE ID START");
+			int lastIdAfter = perun.getAuditer().getLastMessageId();
+			System.out.println("GET MESSAGE ID STOP");
+			System.out.println("GET MESSAGES");
+			List<AuditMessage> messages = perun.getAuditer().getMessageForParser(lastIdBefore, lastIdAfter);
+			System.out.println("----------------------------------------------");
+			System.out.println("TYTO ZPRAVY SE ULOZILI DO DB:");
+			for(AuditMessage a: messages) {
+				System.out.println(a);
+			}
+			System.out.println("----------------------------------------------");
+		} else if(testNumber == 4) {
+			System.out.println("--START--");
+			System.out.println("GET MESSAGE ID START");
+			int lastIdBefore = perun.getAuditer().getLastMessageId();
+			System.out.println("GET MESSAGE ID STOP");
+			try {
+				System.out.println("TEST4 -- START");
+				perun.getVosManagerBl().test4(perunSession);
+			} catch (InternalErrorException ex) {
+				//this is ok, do not throw an exception there
+			}
+			System.out.println("TEST1 -- STOP");
+			System.out.println("GET MESSAGE ID START");
+			int lastIdAfter = perun.getAuditer().getLastMessageId();
+			System.out.println("GET MESSAGE ID STOP");
+			System.out.println("GET MESSAGES");
+			List<AuditMessage> messages = perun.getAuditer().getMessageForParser(lastIdBefore, lastIdAfter);
+			System.out.println("----------------------------------------------");
+			System.out.println("TYTO ZPRAVY SE ULOZILI DO DB:");
+			for(AuditMessage a: messages) {
+				System.out.println(a);
+			}
+			System.out.println("----------------------------------------------");
+		}
+	}
+
 	public static void main(String[] args) throws Exception {
 		if(args.length == 0 || args.length > 2) {
 			System.out.println(badUsage(null));
@@ -101,6 +209,26 @@ public class Main {
 				main = new Main(null, true);
 			}
 			writer.close();
+		} else if(args[0].equals("-t1")) {
+			System.out.println("PROVADIM TEST ULOZENI ZPRAV 1:");
+			System.out.println("VNEJSI I VNITRNI TRANSAKCE VPORADKU");
+			System.out.println("-----------------------------------");
+			Main main = new Main(1);
+		} else if(args[0].equals("-t2")) {
+			System.out.println("PROVADIM TEST ULOZENI ZPRAV 2:");
+			System.out.println("VNEJSI ROLLBACK VNITRNI VPORADKU");
+			System.out.println("--------------------------------");
+			Main main = new Main(2);
+		} else if(args[0].equals("-t3")) {
+			System.out.println("PROVADIM TEST ULOZENI ZPRAV 3:");
+			System.out.println("VNEJSI OK POTE CO VNITRNI ROLLBACK");
+			System.out.println("----------------------------------------");
+			Main main = new Main(3);
+		} else if(args[0].equals("-t4")) {
+			System.out.println("PROVADIM TEST ULOZENI ZPRAV 1:");
+			System.out.println("VNEJSI ROLLBACK POTE CO VNITRNI ROLLBACK");
+			System.out.println("----------------------------------------");
+			Main main = new Main(4);
 		} else {
 			System.out.println(badUsage(args[0]));
 			System.out.println(help());

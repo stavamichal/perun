@@ -45,6 +45,7 @@ import cz.metacentrum.perun.core.implApi.ExtSourceApi;
 import cz.metacentrum.perun.core.implApi.ExtSourceSimpleApi;
 import cz.metacentrum.perun.core.implApi.VosManagerImplApi;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 /**
@@ -70,6 +71,128 @@ public class VosManagerBlImpl implements VosManagerBl {
 	public List<Vo> getVos(PerunSession sess) throws InternalErrorException {
 		return getVosManagerImpl().getVos(sess);
 	}
+
+	public void test1(PerunSession sess) throws InternalErrorException {
+		System.out.println("LOG");
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE MAIN TRANSACTION -- started");
+		System.out.println("TESTING AUDITER MESSAGE MAIN TRANSACTION -- started");
+		//ok
+		perunBl.getVosManagerBl().innerTransaction(sess, false);
+		//ok
+		System.out.println("LOG");
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE MAIN TRANSACTION -- ended");
+		System.out.println("TESTING AUDITER MESSAGE MAIN TRANSACTION -- ended");
+	}
+
+	public void test2(PerunSession sess) throws InternalErrorException {
+		System.out.println("LOG");
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE MAIN TRANSACTION -- started");
+		System.out.println("TESTING AUDITER MESSAGE MAIN TRANSACTION -- started");
+		//ok
+		perunBl.getVosManagerBl().innerTransaction(sess, false);
+
+		Vo vo = new Vo();
+		Random rand = new Random();
+		int n = rand.nextInt(1000000) + 1000000;
+		vo.setShortName(String.valueOf(n));
+		vo.setName(String.valueOf(n));
+
+		//rollback
+		System.out.println("Creating VO -- start");
+		vosManagerImpl.createVo(sess, vo, true);
+		System.out.println("Creating VO " + vo + " -- end -- FAILED");
+		System.out.println("LOG");
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE MAIN TRANSACTION -- ended");
+		System.out.println("TESTING AUDITER MESSAGE MAIN TRANSACTION -- ended");
+	}
+
+	public void test3(PerunSession sess) throws InternalErrorException {
+		System.out.println("LOG");
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE MAIN TRANSACTION -- started");
+		System.out.println("TESTING AUDITER MESSAGE MAIN TRANSACTION -- started");
+
+		//rollback
+		try {
+			perunBl.getVosManagerBl().innerTransaction(sess, true);
+		} catch (InternalErrorException ex) {
+			//skip this, rollback already did
+		}
+
+		//ok
+		System.out.println("LOG");
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE MAIN TRANSACTION -- ended");
+		System.out.println("TESTING AUDITER MESSAGE MAIN TRANSACTION -- ended");
+	}
+
+	public void test4(PerunSession sess) throws InternalErrorException {
+		System.out.println("LOG");
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE MAIN TRANSACTION -- started");
+		System.out.println("TESTING AUDITER MESSAGE MAIN TRANSACTION -- started");
+
+		//rollback
+		try {
+			perunBl.getVosManagerBl().innerTransaction(sess, true);
+		} catch (InternalErrorException ex) {
+			//skip this, rollback already did
+		}
+
+		Vo vo = new Vo();
+		Random rand = new Random();
+		int n = rand.nextInt(1000000) + 1000000;
+		vo.setShortName(String.valueOf(n));
+		vo.setName(String.valueOf(n));
+
+		//rollback
+		System.out.println("Creating VO -- start");
+		vosManagerImpl.createVo(sess, vo, true);
+		System.out.println("Creating VO " + vo + " -- end -- FAILED");
+		System.out.println("LOG");
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE MAIN TRANSACTION -- ended");
+		System.out.println("TESTING AUDITER MESSAGE MAIN TRANSACTION -- ended");
+	}
+
+	public void innerTransaction(PerunSession sess, boolean failed) throws InternalErrorException {
+		System.out.println("LOG");
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE INNER TRANSACTION -- started");
+		System.out.println("TESTING AUDITER MESSAGE INNER TRANSACTION -- started");
+
+		Vo vo1 = new Vo();
+		Random rand1 = new Random();
+		int n1 = rand1.nextInt(1000000) + 1000000;
+		vo1.setShortName(String.valueOf(n1));
+		vo1.setName(String.valueOf(n1));
+
+		System.out.println("Creating VO -- start");
+		vosManagerImpl.createVo(sess, vo1, false);
+		System.out.println("Creating VO " + vo1 + " -- end -- SUCCESS");
+
+		System.out.println("LOG");
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE INNER TRANSACTION -- VO {} created.",vo1);
+		System.out.println("TESTING AUDITER MESSAGE INNER TRANSACTION -- VO " + vo1 + " created.");
+
+		Vo vo2 = new Vo();
+		Random rand2 = new Random();
+		int n2 = rand2.nextInt(1000000) + 1000000;
+		vo2.setShortName(String.valueOf(n2));
+		vo2.setName(String.valueOf(n2));
+
+		System.out.println("Creating VO -- start");
+		vosManagerImpl.createVo(sess, vo2, failed);
+		if(failed) {
+			System.out.println("Creating VO " + vo2 + " -- end -- FAILED");
+		} else {
+			System.out.println("Creating VO " + vo2 + " -- end -- SUCCESS");
+		}
+
+		System.out.println("LOG");
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE INNER TRANSACTION -- VO {} created.",vo2);
+		System.out.println("TESTING AUDITER MESSAGE INNER TRANSACTION -- VO " + vo2 + " created.");
+
+		getPerunBl().getAuditer().log(sess, "TESTING AUDITER MESSAGE INNER TRANSACTION -- ended.",vo2);
+		System.out.println("TESTING AUDITER MESSAGE INNER TRANSACTION -- ended.");
+	}
+
+
 
 	public void deleteVo(PerunSession sess, Vo vo, boolean forceDelete) throws InternalErrorException, RelationExistsException {
 		log.debug("Deleting vo {}", vo);

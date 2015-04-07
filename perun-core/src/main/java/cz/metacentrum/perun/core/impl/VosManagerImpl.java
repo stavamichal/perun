@@ -105,6 +105,27 @@ public class VosManagerImpl implements VosManagerImplApi {
 		}
 	}
 
+	public Vo createVo(PerunSession sess, Vo vo, boolean failed) throws InternalErrorException {
+		// Get VO ID
+		int voId;
+		try {
+			if(failed) {
+				voId = 21;
+			} else {
+				voId = Utils.getNewId(jdbc, "vos_id_seq");
+			}
+			jdbc.update("insert into vos(id, name, short_name, created_by,modified_by, created_by_uid, modified_by_uid) values (?,?,?,?,?,?,?)",
+					voId, vo.getName(), vo.getShortName(), sess.getPerunPrincipal().getActor(), sess.getPerunPrincipal().getActor(), sess.getPerunPrincipal().getUserId(), sess.getPerunPrincipal().getUserId());
+		} catch (RuntimeException e) {
+			throw new InternalErrorException(e);
+		}
+
+		// set assigned id
+		vo.setId(voId);
+
+		return vo;
+	}
+
 	public Vo createVo(PerunSession sess, Vo vo) throws VoExistsException, InternalErrorException {
 		Utils.notNull(vo.getName(), "vo.getName()");
 		Utils.notNull(vo.getShortName(), "vo.getShortName()");
