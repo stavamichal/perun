@@ -909,6 +909,8 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 			} catch (ExtSourceNotExistsException e) {
 				throw new InternalErrorException(e);
 			}
+			
+			log.info("EXTSOURCE -- extSource name: " + membersSource);
 
 			// Get all group attributes and store them in simple Map<String, String> in order to use method getGroupSubjects
 			Map<String, String> attributes = new HashMap<String, String>();
@@ -926,6 +928,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 
 			// GET ALL SUBJECTS' LOGINS FROM EXTERNAL GROUP
 
+			log.info("EXTSOURCE -- all group attributes: " + attributes);
 
 			// Get the subjects from the external group
 			List<Map<String, String>> subjects;
@@ -936,9 +939,13 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				throw new InternalErrorException("ExtSource " + source.getName() + " doesn't support getGroupSubjects", e2);
 			}
 
+			log.info("EXTSOURCE -- subjects from group: " + subjects);
+
 			// Get total number of users to synchronize
 			remainingNumberOfUsersToSynchronize = subjects.size();
 			// END - GET ALL SUBJECTS' LOGINS FROM EXTERNAL GROUP
+
+			log.info("EXTSOURCE -- number of users to synchronize: " + remainingNumberOfUsersToSynchronize);
 
 			// GET CANDIDATES
 			// Get all subjects with attributes
@@ -976,6 +983,8 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				}
 			}
 			// END - GET CANDIDATES
+
+			log.info("EXTSOURCE -- Candidates: " + candidates);
 
 			// GET CURRENT MEMBERS IN PERUN
 
@@ -1195,24 +1204,31 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				log.trace("Group synchronization: remaining number of users to synchronize {}.", remainingNumberOfUsersToSynchronize);
 			}
 
+			log.info("EXTSOURCE -- candidates to add: " + candidatesToAdd);
+
 			// Now add missing members
 			for (Candidate candidate: candidatesToAdd) {
 				Member member = null;
+				log.info("EXTSOURCE -- CANDIDATE: " + candidate);
 				try {
 					// Check if the member is already in the VO
 					member = getPerunBl().getMembersManagerBl().getMemberByUserExtSources(sess, getPerunBl().getGroupsManagerBl().getVo(sess, group), candidate.getUserExtSources());
+					log.info("EXTSOURCE -- 1");
 				} catch (MemberNotExistsException e) {
 					try {
 						// We have new member, so create him using synchronous createMember
 						member = getPerunBl().getMembersManagerBl().createMemberSync(sess, getPerunBl().getGroupsManagerBl().getVo(sess, group), candidate);
+						log.info("EXTSOURCE -- 2");
 						log.info("Group synchronization {}: New member id {} created during synchronization.", group, member.getId());
 					} catch (AlreadyMemberException e1) {
 						throw new ConsistencyErrorException("Trying to add existing member");
 					} catch (AttributeValueException e1) {
+						log.info("EXTSOURCE -- 3");
 						log.warn("Can't create member from candidate {} due to attribute value exception {}.", candidate, e1);
 						skippedMembers.add("MemberEntry:[" + candidate + "] was skipped because there was problem when createing member from candidate: Exception: " + e1.getName() + " => '" + e1.getMessage() + "'");
 						continue;
 					} catch (ExtendMembershipException ex) {
+						log.info("EXTSOURCE -- 4");
 						log.warn("Can't create member from candidate {} due to membership expiration exception {}.", candidate, ex);
 						skippedMembers.add("MemberEntry:[" + candidate + "] was skipped because membership expiration: Exception: " + ex.getName() + " => " + ex.getMessage() + "]");
 						continue;
@@ -1225,6 +1241,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 						// Do not add members to the generic members group
 						try {
 							getPerunBl().getGroupsManagerBl().addMember(sess, group, member);
+							log.info("EXTSOURCE -- 5");
 						} catch(NotMemberOfParentGroupException ex) {
 							// Shouldn't happen, because every group has at least Members group as a parent
 							throw new ConsistencyErrorException(ex);
@@ -1234,16 +1251,20 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				} catch (AlreadyMemberException e) {
 					throw new ConsistencyErrorException("Trying to add existing member");
 				} catch (AttributeValueException e) {
+					log.info("EXTSOURCE -- 6");
 					// There is a problem with attribute value, so set INVALID status of the member
 					getPerunBl().getMembersManagerBl().invalidateMember(sess, member);
 				}
 
 				// Try to validate member
 				try {
+					log.info("EXTSOURCE -- 7");
 					getPerunBl().getMembersManagerBl().validateMember(sess, member);
 				} catch (WrongAttributeValueException e) {
+					log.info("EXTSOURCE -- 8");
 					log.warn("Member id {} will be in INVALID status due to wrong attributes {}.", member.getId(), e);
 				} catch (WrongReferenceAttributeValueException e) {
+					log.info("EXTSOURCE -- 9");
 					log.warn("Member id {} will be in INVALID status due to wrong attributes {}.", member.getId(), e);
 				}
 			}

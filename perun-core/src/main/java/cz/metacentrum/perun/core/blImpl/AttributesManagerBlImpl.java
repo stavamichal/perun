@@ -1264,6 +1264,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	}
 
 	public void setRequiredAttributes(PerunSession sess, Facility facility, Resource resource, User user, Member member, List<Attribute> attributes) throws InternalErrorException, WrongAttributeAssignmentException, WrongReferenceAttributeValueException, AttributeNotExistsException, WrongAttributeValueException {
+		log.info("EXTSOURCE -- 40");
 		//fill attributes and get back only those which were really filled with new value
 		List<Attribute> filledAttributes = this.fillAttributes(sess, facility, resource, user, member, attributes, true);
 
@@ -1320,8 +1321,11 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 		//Check all attributes
 		checkAttributesValue(sess, facility, resource, user, member, attributes);
 
+		log.info("EXTSOURCE -- Attributes to check: " + attributes);
+
 		//Check all attributes dependencies
 		this.checkAttributesDependencies(sess, resource, member, user, facility, attributes);
+		log.info("EXTSOURCE -- 41");
 	}
 	
 	public void setRequiredAttributes(PerunSession sess, Facility facility, Resource resource, User user, Member member) throws InternalErrorException, WrongAttributeAssignmentException, WrongReferenceAttributeValueException, WrongAttributeValueException, AttributeNotExistsException {
@@ -4064,9 +4068,11 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	public void doTheMagic(PerunSession sess, Member member, boolean trueMagic) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException, WrongAttributeAssignmentException {
 		User user = getPerunBl().getUsersManagerBl().getUserByMember(sess, member);
 		List<Resource> resources = getPerunBl().getResourcesManagerBl().getAllowedResources(sess, member);
+		log.info("EXTSOURCE -- Allowed resources: " + resources);
 		for(Resource resource : resources) {
 			Facility facility = getPerunBl().getResourcesManagerBl().getFacility(sess, resource);
 			List<Attribute> requiredAttributes = getResourceRequiredAttributes(sess, resource, facility, resource, user, member);
+			log.info("EXTSOURCE -- Resource requried attributes :" + requiredAttributes);
 			boolean allOk = false;
 			AttributeDefinition lastWrongAttribute = null;
 			int safetyCounter = 0;
@@ -4079,13 +4085,16 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 				} catch(WrongAttributeAssignmentException ex) {
 					throw new ConsistencyErrorException(ex);
 				} catch(WrongAttributeValueException ex) {
+					log.info("EXTSOURCE -- 20");
 					if(!trueMagic) throw ex;
 					AttributeDefinition wrongAttributeDefinition = ex.getAttribute();
 					if(wrongAttributeDefinition == null) throw new ConsistencyErrorException("WrongAttributeValueException doesn't have set the wrong attribute.", ex);
 					if(wrongAttributeDefinition.equals(lastWrongAttribute)) throw new WrongAttributeValueException("Method doTheMagic can't fix this attribute value", ex);
 					lastWrongAttribute = wrongAttributeDefinition;
 					findAndSetValueInList(requiredAttributes, wrongAttributeDefinition, null);
+					log.info("EXTSOURCE -- 21");
 				} catch(WrongReferenceAttributeValueException ex) {
+					log.info("EXTSOURCE -- 30");
 					if(!trueMagic) throw ex;
 					AttributeDefinition wrongAttributeDefinition = ex.getReferenceAttribute();
 					if(wrongAttributeDefinition == null) throw new ConsistencyErrorException("WrongReferenceAttributeValueException doesn't have set reference attribute.", ex);
@@ -4095,6 +4104,7 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 						//this attribute can't be fixed here
 						throw ex;
 					}
+					log.info("EXTSOURCE -- 31");
 				}
 				safetyCounter++;
 				if(safetyCounter == 50) throw new InternalErrorException("Method doTheMagic possibly stays in infinite loop.");

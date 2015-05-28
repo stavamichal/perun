@@ -253,11 +253,14 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 	public Member createMemberSync(PerunSession sess, Vo vo, Candidate candidate, List<Group> groups) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException, AlreadyMemberException, ExtendMembershipException {
 
 		Member member = createMember(sess, vo, false, candidate, groups);
+		
+		log.info("EXT-SOURCE -- CreateMemberSync createMember: " + member);
 
 		//Validate synchronously
 		try {
-			member = validateMember(sess, member);
+			member = getPerunBl().getMembersManagerBl().validateMember(sess, member);
 		} catch (AttributeValueException ex) {
+			log.info("EXTSOURCE -- 10");
 			log.info("Member can't be validated. He stays in invalid state. Cause: " + ex);
 		}
 
@@ -998,6 +1001,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 		getMembersManagerImpl().setStatus(sess, member, Status.VALID);
 		member.setStatus(Status.VALID);
 		getPerunBl().getAuditer().log(sess, "{} validated.", member);
+		log.info("EXTSOURCE -- member set to valid : " + member);
 		if(oldStatus.equals(Status.INVALID)) {
 			try {
 				getPerunBl().getAttributesManagerBl().doTheMagic(sess, member);
