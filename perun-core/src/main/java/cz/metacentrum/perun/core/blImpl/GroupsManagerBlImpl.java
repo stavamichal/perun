@@ -867,6 +867,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	 */
 	public List<String> synchronizeGroup(PerunSession sess, Group group) throws InternalErrorException, MemberAlreadyRemovedException {
 
+		long startAfterGettingCandidates;
 		List<String> skippedMembers = new ArrayList<>();
 		ExtSource source = null;
 		ExtSource membersSource = null;
@@ -988,12 +989,14 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 					continue;
 				}
 			}
+
+			startAfterGettingCandidates = System.currentTimeMillis();
 			// END - GET CANDIDATES
 
 			// GET CURRENT MEMBERS IN PERUN
 
 			// Get current group members
-			List<RichMember> currentMembers = this.getGroupRichMembersWithAttributes(sess, group);
+			List<RichMember> currentMembers = this.getGroupRichMembers(sess, group);
 			log.debug("Group synchronization {}: perun group contains {} members.", group, currentMembers.size());
 
 			// END - GET CURRENT MEMBERS IN PERUN
@@ -1021,7 +1024,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 						candidatesToAdd.remove(candidate);
 
 						// Iterate through all subject attributes
-						log.trace("Group synchronization {}: checking the state of the attributes for member {}", group, member);
+						/*log.trace("Group synchronization {}: checking the state of the attributes for member {}", group, member);
 						for (String attributeName : candidate.getAttributes().keySet()) {
 							boolean existingMemberAttributeFound = false;
 							boolean existingUserAttributeFound = false;
@@ -1122,10 +1125,10 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 									log.trace("Setting the {} value {}", newAttribute, candidate.getAttributes().get(attributeName));
 								}
 							}
-						}
+						}*/
 
 						// Synchronize userExtSources
-						for (UserExtSource ues : candidate.getUserExtSources()) {
+						/*for (UserExtSource ues : candidate.getUserExtSources()) {
 							if (!getPerunBl().getUsersManagerBl().userExtSourceExists(sess, ues)) {
 								try {
 									getPerunBl().getUsersManagerBl().addUserExtSource(sess, richMember.getUser(), ues);
@@ -1133,10 +1136,10 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 									throw new ConsistencyErrorException("Adding already existing userExtSource " + ues, e);
 								}
 							}
-						}
+						}*/
 
 						// If the member has expired or disabled status, try to expire/validate him (depending on expiration date)
-						try {
+						/*try {
 							if (richMember.getStatus().equals(Status.DISABLED) || richMember.getStatus().equals(Status.EXPIRED)) {
 								Date now = new Date();
 
@@ -1179,7 +1182,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 							}
 						} catch (ParseException e) {
 							log.error("Group synchronization: member expiration String cannot be parsed, exception {}", e);
-						}
+						}*/
 
 						// If the member has INVALID status, try to validate the member
 						try {
@@ -1367,6 +1370,9 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 			}
 		}
 		
+		long endAfterGettingCandidates = System.currentTimeMillis();
+		log.debug("TIME WITHOUT GETTING MEMBERS: " + (endAfterGettingCandidates-startAfterGettingCandidates) + "ms");
+
 		return skippedMembers;
 	}
 
