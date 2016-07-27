@@ -390,7 +390,10 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 					try {
 						FacilityUserVirtualAttributesModuleImplApi attributeModule = this.attributesManagerImpl.getFacilityUserVirtualAttributeModule(sess, attribute);
-						return attributeModule.getAttributeValue((PerunSessionImpl) sess, (Facility) attributeHolder2, (User) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- START-01");
+						Attribute attr = attributeModule.getAttributeValue((PerunSessionImpl) sess, (Facility) attributeHolder2, (User) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- END-01");
+						return attr;
 					} catch (InternalErrorException ex) {
 						throw new InternalErrorRuntimeException(ex);
 					}
@@ -400,7 +403,10 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 					try {
 						FacilityVirtualAttributesModuleImplApi attributeModule = this.attributesManagerImpl.getFacilityVirtualAttributeModule(sess, attribute);
-						return attributeModule.getAttributeValue((PerunSessionImpl) sess, (Facility) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- START-02");
+						Attribute attr = attributeModule.getAttributeValue((PerunSessionImpl) sess, (Facility) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- END-02");
+						return attr;
 					} catch (InternalErrorException ex) {
 						throw new InternalErrorRuntimeException(ex);
 					}
@@ -410,7 +416,10 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 					try {
 						ResourceVirtualAttributesModuleImplApi attributeModule = this.attributesManagerImpl.getResourceVirtualAttributeModule(sess, attribute);
-						return attributeModule.getAttributeValue((PerunSessionImpl) sess, (Resource) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- START-03");
+						Attribute attr = attributeModule.getAttributeValue((PerunSessionImpl) sess, (Resource) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- END-03");
+						return attr;
 					} catch (InternalErrorException ex) {
 						throw new InternalErrorRuntimeException(ex);
 					}
@@ -420,7 +429,10 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 					try {
 						UserVirtualAttributesModuleImplApi attributeModule = this.attributesManagerImpl.getUserVirtualAttributeModule(sess, attribute);
-						return attributeModule.getAttributeValue((PerunSessionImpl) sess, (User) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- START-04");
+						Attribute attr = attributeModule.getAttributeValue((PerunSessionImpl) sess, (User) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- END-04");
+						return attr;
 					} catch (InternalErrorException ex) {
 						throw new InternalErrorRuntimeException(ex);
 					}
@@ -430,7 +442,10 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 					try {
 						MemberVirtualAttributesModuleImplApi attributeModule = this.attributesManagerImpl.getMemberVirtualAttributeModule(sess, attribute);
-						return attributeModule.getAttributeValue((PerunSessionImpl) sess, (Member) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- START-05");
+						Attribute attr = attributeModule.getAttributeValue((PerunSessionImpl) sess, (Member) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- END-05");
+						return attr;
 					} catch (InternalErrorException ex) {
 						throw new InternalErrorRuntimeException(ex);
 					}
@@ -441,7 +456,10 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 					try {
 						ResourceGroupVirtualAttributesModuleImplApi attributeModule = this.attributesManagerImpl.getResourceGroupVirtualAttributeModule(sess, attribute);
-						return attributeModule.getAttributeValue((PerunSessionImpl) sess, (Resource) attributeHolder2, (Group) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- START-06");
+						Attribute attr = attributeModule.getAttributeValue((PerunSessionImpl) sess, (Resource) attributeHolder2, (Group) attributeHolder, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- END-06");
+						return attr;
 					} catch (InternalErrorException ex) {
 						throw new InternalErrorRuntimeException(ex);
 					}
@@ -452,7 +470,10 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 
 					try {
 						ResourceMemberVirtualAttributesModuleImplApi attributeModule = this.attributesManagerImpl.getResourceMemberVirtualAttributeModule(sess, attribute);
-						return attributeModule.getAttributeValue((PerunSessionImpl) sess, (Resource) attributeHolder, (Member) attributeHolder2, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- START-07");
+						Attribute attr = attributeModule.getAttributeValue((PerunSessionImpl) sess, (Resource) attributeHolder, (Member) attributeHolder2, attribute);
+						log.debug("MAP-ROW: AttributesManagerImpl.AttributeRowMapper --- END-07");
+						return attr;
 					} catch (InternalErrorException ex) {
 						throw new InternalErrorRuntimeException(ex);
 					}
