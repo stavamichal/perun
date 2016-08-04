@@ -38,6 +38,10 @@ sub getMemberId {
 	return shift->{_id};
 }
 
+sub getMembershipType {
+	return shift->{_membershipType};
+}
+
 sub getUserAttributes {
         my $self = shift;
 	return @{$self->{_userAttributes}};
@@ -86,11 +90,11 @@ sub getDisplayName {
 
 sub getCommonArrayRepresentation {
 	my $self = shift;
-	return ($self->{_id}, $self->{_user}->{id}, $self->getDisplayName, $self->{_status});
+	return ($self->{_id}, $self->{_user}->{id}, $self->getDisplayName, $self->{_status}, $self->{_membershipType});
 }
 
 sub getCommonArrayRepresentationHeading {
-	return ('Member Id', 'User Id', 'Name', 'Status');
+	return ('Member Id', 'User Id', 'Name', 'Status', 'Type');
 }
 
 1;

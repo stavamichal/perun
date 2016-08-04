@@ -1,0 +1,37 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use Getopt::Long qw(:config no_ignore_case);
+use Text::ASCIITable;
+use Perun::Agent;
+use Perun::Common qw(printMessage getSortingFunction printTable);
+
+my $sortingFunction = getSortingFunction("getId");
+
+my $agent = Perun::Agent->new();
+my $groupsAgent = $agent->getGroupsAgent;
+my $vosAgent = $agent->getVosAgent;
+my @vos = $vosAgent->getVos;
+
+my @allGroups = ();
+foreach my $vo (sort $sortingFunction @vos) {
+	my @groups = $groupsAgent->getGroups(vo => $vo->getId);
+	my $membersGroup = $groupsAgent->getGroupByName(vo => $vo->getId, name => "members");
+	print $vo->getShortName . "\n";
+	my @voGroups = ();
+	foreach my $group (sort @groups) {
+		push(@allGroups, $group);
+		push(@voGroups, $group);
+	}
+	printTable($sortingFunction, @voGroups);
+	foreach my $group (sort $sortingFunction @groups) {
+		print $group->getName . "\n";
+		my @richMembers = $groupsAgent->getGroupRichMembers(group => $group->getId, pageSize => 0, pageNum => 0);
+		my $memberSortingFunction = getSortingFunction("getMemberId");
+		printTable($memberSortingFunction, @richMembers);
+	}
+}
+
+print "--------------------------------\nPocet skupin = " . @allGroups . "\n";
+

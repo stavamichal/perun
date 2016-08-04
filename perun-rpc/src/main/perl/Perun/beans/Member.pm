@@ -67,6 +67,11 @@ sub getStatus {
     return $self->{_status};
 }
 
+sub getMembershipType {
+		my $self = shift;
+		return $self->{_membershipType};
+}
+
 sub getCommonArrayRepresentation {
 	my $member = shift;
 	return ($member->getId, $member->getUserId);

@@ -106,4 +106,13 @@ sub setVoId
 	my $self = shift;
 	$self->{_voId} = shift;
 }
+
+sub getCommonArrayRepresentation {
+	my $self = shift;
+	return ($self->{_id}, $self->{_voId}, $self->{_name});
+}
+
+sub getCommonArrayRepresentationHeading {
+	return ('Group id', 'Vo id', 'Group name');
+}
 1;
