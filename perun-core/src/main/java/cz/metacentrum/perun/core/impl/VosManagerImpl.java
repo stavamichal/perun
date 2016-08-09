@@ -117,8 +117,12 @@ public class VosManagerImpl implements VosManagerImplApi {
 		int voId;
 		try {
 			voId = Utils.getNewId(jdbc, "vos_id_seq");
-			jdbc.update("insert into vos(id, name, short_name, created_by,modified_by, created_by_uid, modified_by_uid) values (?,?,?,?,?,?,?)",
+			try {
+				getVoById(sess, voId);
+			} catch (VoNotExistsException ex) {
+				jdbc.update("insert into vos(id, name, short_name, created_by,modified_by, created_by_uid, modified_by_uid) values (?,?,?,?,?,?,?)",
 					voId, vo.getName(), vo.getShortName(), sess.getPerunPrincipal().getActor(), sess.getPerunPrincipal().getActor(), sess.getPerunPrincipal().getUserId(), sess.getPerunPrincipal().getUserId());
+			}
 		} catch (RuntimeException e) {
 			throw new InternalErrorException(e);
 		}
