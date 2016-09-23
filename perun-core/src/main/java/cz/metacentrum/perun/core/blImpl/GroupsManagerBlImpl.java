@@ -1933,6 +1933,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 
 			//get RichMember with attributes
 			richMember = getPerunBl().getMembersManagerBl().convertMembersToRichMembersWithAttributes(sess, Arrays.asList(richMember), attrDefs).get(0);
+			log.debug("Group Synchronization {}: updating member {}.", group, richMember.getId());
 			for (String attributeName : candidate.getAttributes().keySet()) {
 				//update member attribute
 				if(attributeName.startsWith(AttributesManager.NS_MEMBER_ATTR)) {
@@ -2114,6 +2115,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	private void addMissingMembersWhileSynchronization(PerunSession sess, Group group, List<Candidate> candidatesToAdd, List<String> overwriteUserAttributesList, List<String> skippedMembers) throws InternalErrorException, GroupOperationsException {
 		// Now add missing members
 		for (Candidate candidate: candidatesToAdd) {
+			log.debug("Group Synchronization {}: adding candidate {}.", group, candidate);
 			Member member = null;
 			try {
 				// Check if the member is already in the VO (just not in the group)
@@ -2211,6 +2213,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 
 		//Second remove members (use authoritative group where is needed)
 		for (RichMember member: membersToRemove) {
+			log.debug("Group Synchronization {}: removing former member {}.", group, member.getId());
 			// Member is missing in the external group, so remove him from the perun group
 			try {
 				//members group
