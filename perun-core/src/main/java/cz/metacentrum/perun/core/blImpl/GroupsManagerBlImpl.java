@@ -1042,6 +1042,10 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				categorizeMembersForSynchronization(sess, actualGroupMembers, candidates, candidatesToAdd, membersToUpdate, membersToRemove);
 			}
 
+			log.debug("MembersToUpdate: " + membersToUpdate.size());
+			log.debug("CandidatesToAdd: " + candidatesToAdd.size());
+			log.debug("MembersToRemove: " + membersToRemove.size());
+
 			//Update members already presented in group
 			updateExistingMembersWhileSynchronization(sess, group, membersToUpdate, overwriteUserAttributesList);
 
@@ -1909,6 +1913,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 		//Iterate through all subject attributes
 		for(Candidate candidate: membersToUpdate.keySet()) {
 			RichMember richMember = membersToUpdate.get(candidate);
+			log.debug("Status of richMember: " + richMember.getStatus());
 
 			//If member not exists in this moment (somebody remove him before start of updating), skip him and log it
 			try {
@@ -1934,6 +1939,14 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 
 			//get RichMember with attributes
 			richMember = getPerunBl().getMembersManagerBl().convertMembersToRichMembersWithAttributes(sess, Arrays.asList(richMember), attrDefs).get(0);
+			List<Attribute> userAttributes = richMember.getMemberAttributes();
+			Attribute mail = new Attribute();
+			for(Attribute attr: userAttributes) {
+				if(attr.getFriendlyName().equals("mail")) {
+					mail = attr;
+				}
+			}
+			log.debug("Synchronize member with email: {}",mail.getValue());
 			for (String attributeName : candidate.getAttributes().keySet()) {
 				//update member attribute
 				if(attributeName.startsWith(AttributesManager.NS_MEMBER_ATTR)) {
@@ -2088,6 +2101,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 			// If the member has still DISABLED status, try to validate the member
 			try {
 				if (richMember.getStatus().equals(Status.DISABLED)) {
+					log.debug("Trying to validate member, because was in DISABLED state.");
 					getPerunBl().getMembersManagerBl().validateMember(sess, richMember);
 				}
 			} catch (WrongAttributeValueException e) {
