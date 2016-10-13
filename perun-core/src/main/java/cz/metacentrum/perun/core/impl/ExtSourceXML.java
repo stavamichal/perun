@@ -46,7 +46,7 @@ import org.xml.sax.SAXParseException;
 public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 
 	private final static Logger log = LoggerFactory.getLogger(ExtSourceXML.class);
-	
+
 	private String query = null;
 	private String loginQuery = null;
 	private String file = null;
@@ -59,10 +59,10 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 		perunBl = perun;
 		return perun;
 	}
-	
+
 	//URL connection
 	private HttpURLConnection con = null;
-	
+
 	//Pattern for looking replacement in regex string
 	private Pattern pattern = Pattern.compile("([^\\\\]|^)(\\\\\\\\)*\\/([^\\\\]|$)");
 
@@ -109,7 +109,7 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 		if (query == null || query.isEmpty()) {
 			throw new InternalErrorException("query attributes is required");
 		}
-		
+
 		//Replace '?' by searchString
 		if(login == null || login.isEmpty()) {
 			throw new InternalErrorException("login string can't be null or empty");
@@ -135,16 +135,16 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 	public List<Map<String, String>> getGroupSubjects(Map<String, String> attributes) throws InternalErrorException, ExtSourceUnsupportedOperationException {
 		// Get the query for the group subjects
 		String queryForGroup = attributes.get(GroupsManager.GROUPMEMBERSQUERY_ATTRNAME);
-		
+
 		//If there is no query for group, throw exception
 		if(queryForGroup == null) throw new InternalErrorException("Attribute " + GroupsManager.GROUPMEMBERSEXTSOURCE_ATTRNAME + " can't be null.");
-		
+
 		//Get file or uri of xml
 		prepareEnviroment();
-		
+
 		return xpathParsing(queryForGroup, 0);
 	}
-	
+
 	protected void prepareEnviroment() throws InternalErrorException {
 		//Get file or uri of xml
 		file = (String) getAttributes().get("file");
@@ -156,24 +156,24 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 			}
 		}
 	}
-	
+
 	/**
 	 * Get query and maxResults.
 	 * Prepare document and xpathExpression by query.
 	 * Get all nodes by xpath from document and parse them one by one.
-	 * 
+	 *
 	 * The way of xml take from "file" or "uri" (configuration file)
-	 * 
+	 *
 	 * @param query xpath query from config file
 	 * @param maxResults never get more than maxResults results (0 mean unlimited)
 	 *
 	 * @return List of results, where result is Map<String,String> like <name, value>
-	 * @throws InternalErrorException 
+	 * @throws InternalErrorException
 	 */
 	protected List<Map<String,String>> xpathParsing(String query, int maxResults) throws InternalErrorException {
 		//Prepare result list
 		List<Map<String, String>> subjects = new ArrayList<Map<String, String>>();
-		
+
 		//Create new document factory builder
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder builder;
@@ -182,7 +182,7 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 		} catch (ParserConfigurationException ex) {
 			throw new InternalErrorException("Error when creating newDocumentBuilder.", ex);
 		}
-		
+
 		Document doc;
 		try {
 			if(file != null && !file.isEmpty()) {
@@ -191,7 +191,7 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 				doc = builder.parse(this.createTwoWaySSLConnection(uri));
 			} else {
 				throw new InternalErrorException("Document can't be parsed, because there is no way (file or uri) to this document in xpathParser.");
-			}			
+			}
 		} catch (SAXParseException ex) {
 			throw new InternalErrorException("Error when parsing uri by document builder.", ex);
 		} catch (SAXException ex) {
@@ -199,7 +199,7 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 		} catch (IOException ex) {
 			throw new InternalErrorException("Error when parsing uri by document builder. Problem with input or output.", ex);
 		}
-		
+
 		//Prepare xpath expression
 		XPathFactory xPathfactory = XPathFactory.newInstance();
 		XPath xpath = xPathfactory.newXPath();
@@ -209,7 +209,7 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 		} catch (XPathExpressionException ex) {
 			throw new InternalErrorException("Error when compiling xpath query.", ex);
 		}
-		
+
 		//Call query on document node and get back nodesets
 		NodeList nodeList;
 		try {
@@ -217,78 +217,105 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 		} catch (XPathExpressionException ex) {
 			throw new InternalErrorException("Error when evaluate xpath query on document.", ex);
 		}
-		
+
 		//Test if there is any nodeset in result
 		if(nodeList.getLength() == 0) {
 			//There is no results, return empty subjects
 			return subjects;
 		}
-		
+
+		String mapping = getAttributes().get("xmlMapping");
+		String[] mappingArray = mapping.split(",\n");
+		Map<String, XPathExpression> xpathmap = new HashMap<>();
+
+		for(int i=0; i<mappingArray.length; i++) {
+			String attr = mappingArray[i].trim();
+
+			int index = attr.indexOf("=");
+
+			if(index <= 0) throw new InternalErrorException("There is no text in xmlMapping attribute or there is no '=' character.");
+			String name = attr.substring(0, index);
+			String value = attr.substring(index +1);
+
+			if(value.startsWith("#")) {
+				value = value.substring(1);
+				String[] regexAndXpath = value.split("#");
+				if(regexAndXpath.length != 2) throw new InternalErrorException("There is not only 2 parts (regex and XpathExpression). There are " + regexAndXpath.length + " parts.");
+				if (!xpathmap.containsKey(regexAndXpath[1])) {
+					xpathmap.put(regexAndXpath[1], prepareXpathExpression(regexAndXpath[1]));
+				}
+			} else {
+				if (!xpathmap.containsKey(value)) {
+					xpathmap.put(value, prepareXpathExpression(value));
+				}
+			}
+		}
+
+		Node[] nodes = new Node[nodeList.getLength()];
+		for(int i=0; i<nodeList.getLength(); i++) {
+			nodes[i] = nodeList.item(i);
+		}
+
 		//Iterate through nodes and convert them to Map<String,String>
 		for(int i=0; i<nodeList.getLength(); i++) {
-			Map<String,String> map = convertNodeToMap(nodeList.item(i));
+			// remove NODE after processing from structure !
+			Node node = nodeList.item(i);
+			node.getParentNode().removeChild(node);
+			Map<String,String> map = convertNodeToMap(node, xpathmap);
 			if(map != null) subjects.add(map);
 			//Reducing results by maxResults
 			if(maxResults > 0) {
 				if(subjects.size() >= maxResults) break;
 			}
 		}
-		
+
 		this.close();
 		return subjects;
 	}
-	
+
 	/**
 	 * Get XML node and convert all values by "xmlMapping" attribute to Map<String,String>
 	 * In map there are "name=value" data.
-	 * 
+	 *
 	 * Attribute xmlMapping is from file perun-extSource.xml
-	 * 
+	 *
 	 * @param node node for converting
 	 * @return Map<String,String> like <name,value>
-	 * @throws InternalErrorException 
+	 * @throws InternalErrorException
 	 */
-	protected Map<String, String> convertNodeToMap(Node node) throws InternalErrorException {
+	protected Map<String, String> convertNodeToMap(Node node, Map<String, XPathExpression> xpathmap) throws InternalErrorException {
 		Map<String,String> nodeInMap = new HashMap<String,String>();
 		//If node is empty, return null
 		if(node == null) return null;
-		
+
 		String mapping = getAttributes().get("xmlMapping");
 		String[] mappingArray = mapping.split(",\n");
-		
+
 		for(int i=0; i<mappingArray.length; i++) {
 			String attr = mappingArray[i].trim();
-			
+
 			int index = attr.indexOf("=");
-			
+
 			if(index <= 0) throw new InternalErrorException("There is no text in xmlMapping attribute or there is no '=' character.");
 			String name = attr.substring(0, index);
 			String value = attr.substring(index +1);
-			
+
 			if(value.startsWith("#")) {
 				value = value.substring(1);
 				String[] regexAndXpath = value.split("#");
 				if(regexAndXpath.length != 2) throw new InternalErrorException("There is not only 2 parts (regex and XpathExpression). There are " + regexAndXpath.length + " parts.");
-				value = extractValueByRegex(getValueFromXpath(node, regexAndXpath[1]), regexAndXpath[0]);
+				value = extractValueByRegex(getValueFromXpath(node, xpathmap.get(regexAndXpath[1])), regexAndXpath[0]);
 			} else {
-				value = getValueFromXpath(node, value);
+				value = getValueFromXpath(node, xpathmap.get(value));
 			}
 			nodeInMap.put(name.trim(), value.trim());
 		}
-		
+
 		return nodeInMap;
 	}
-	
-	/**
-	 * Get xml Node and xpath expression to get value from node by this xpath.
-	 * 
-	 * @param node node for getting value from
-	 * @param xpathExpression expression for xpath to looking for value in node
-	 * @return string extracted from node by xpath
-	 * @throws InternalErrorException 
-	 */
-	protected String getValueFromXpath(Node node, String xpathExpression) throws InternalErrorException {
-		//Prepare xpath expression
+
+	private XPathExpression prepareXpathExpression(String xpathExpression) throws InternalErrorException {
+
 		XPathFactory xPathfactory = XPathFactory.newInstance();
 		XPath xpath = xPathfactory.newXPath();
 		XPathExpression expr;
@@ -297,36 +324,48 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 		} catch (XPathExpressionException ex) {
 			throw new InternalErrorException("Error when compiling xpath query.", ex);
 		}
-		
+		return expr;
+
+	}
+
+	/**
+	 * Get xml Node and xpath expression to get value from node by this xpath.
+	 *
+	 * @param node node for getting value from
+	 * @param xpathExpression expression for xpath to looking for value in node
+	 * @return string extracted from node by xpath
+	 * @throws InternalErrorException
+	 */
+	protected String getValueFromXpath(Node node, XPathExpression xpathExpression) throws InternalErrorException {
 		String text;
 		try {
-			 text = (String) expr.evaluate(node, XPathConstants.STRING);
+			text = (String) xpathExpression.evaluate(node, XPathConstants.STRING);
 		} catch (XPathExpressionException ex) {
 			throw new InternalErrorException("Error when evaluate xpath query on node.", ex);
 		}
-		
+
 		return text;
 	}
-	
+
 	/**
 	 * Get regex in format 'regex/replacement' and value to get data from.
 	 * Use regex and replacement to get data from value.
-	 * 
+	 *
 	 * IMPORTANT: Regex must be always in fromat 'regex/replacement' and must have
 	 *						exactly 1 existence of character '/' ex. '[abc](a)[b]/$1'
-	 * 
+	 *
 	 * @param value some string
 	 * @param regex regex in format 'regex/replacement'
 	 * @return extracted string from value by regex
-	 * 
-	 * @throws InternalErrorException 
+	 *
+	 * @throws InternalErrorException
 	 */
 	protected String extractValueByRegex(String value, String regex) throws InternalErrorException {
 		//trim value to erase newlines and spaces before and after value
 		value = value.trim();
 		//regex need to be separate to 2 parts (regex) and (replacement) separated by backslash - ex 'regex/replacement'
 		Matcher match = pattern.matcher(regex);
-		
+
 		//need to separate regex to regexPart and replacementPart
 		String regexPart;
 		String replacementPart;
@@ -342,24 +381,24 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 		} else {
 			throw new InternalErrorException("There is no replacement in regex.");
 		}
-		
+
 		//use regex and replacement to get string from value
 		value = value.replaceAll(regexPart, replacementPart);
 		return value;
 	}
-	
+
 	/**
 	 * Get https uri of xml document and create two way ssl connection using truststore and keystore.
-	 * 
+	 *
 	 * @param uri https uri to xml document
 	 * @return input stream with xml document
-	 * 
+	 *
 	 * @throws IOException if there is some input/output error
 	 * @throws InternalErrorException if some variables are not correctly filled
 	 */
 	protected InputStream createTwoWaySSLConnection(String uri) throws IOException, InternalErrorException {
 		if(uri == null || uri.isEmpty()) throw new InternalErrorException("Uri must be filled, can't be null or empty.");
-		
+
 		/*//KeyStore data
 		String keyStore =  getAttributes().get("keyStore");
 		String keyStorePass = getAttributes().get("keyStorePass");
@@ -367,18 +406,18 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 		if(keyStore == null || keyStorePass == null || keyStoreType == null) {
 			throw new InternalErrorException("KeystorePath, KeystorePass and KeystoreType must be filled. Please look into configuration file.");
 		}
-		
+
 		//TrustStore data
 		String trustStore = getAttributes().get("trustStore");
 		String trustStorePass = getAttributes().get("trustStorePass");
 		if(trustStore == null || trustStorePass == null) {
 			throw new InternalErrorException("TrustStorePath and TrustStorePass must be filled. Please look into configuration file.");
 		}
-		
+
 		//set necessary keystore properties - using a p12 file
 		System.setProperty("javax.net.ssl.keyStore", keyStore);
 		System.setProperty("javax.net.ssl.keyStorePassword", keyStorePass);
-		System.setProperty("javax.net.ssl.keyStoreType", keyStoreType);       
+		System.setProperty("javax.net.ssl.keyStoreType", keyStoreType);
 
 		//set necessary truststore properties - using JKS
 		System.setProperty("javax.net.ssl.trustStore", trustStore);
@@ -389,7 +428,7 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 		//prepare sslFactory
 		SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
 		HttpsURLConnection.setDefaultSSLSocketFactory(factory);
-		
+
 		URL myurl = new URL(uri);
 		con = (HttpURLConnection) myurl.openConnection();
 
@@ -477,7 +516,7 @@ public class ExtSourceXML extends ExtSource implements ExtSourceApi {
 		//return xpath query
 		return result;
 	}
-	
+
 	public void close() throws InternalErrorException {
 		if(con != null) con.disconnect();
 	}
