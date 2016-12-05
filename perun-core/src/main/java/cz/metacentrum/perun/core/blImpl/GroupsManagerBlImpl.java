@@ -554,20 +554,29 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	 * @throws NotGroupMemberException
 	 */
 	protected List<Member> removeIndirectMembers(PerunSession sess, Group group, List<Member> members, int sourceGroupId) throws InternalErrorException, AlreadyMemberException, WrongAttributeValueException, WrongReferenceAttributeValueException, NotGroupMemberException {
+		Random random = new Random();
+		int randomNumber = random.nextInt(10);
+		log.error("C--"+randomNumber+"---ZACATEK: odstranuji indirect membery " + members + " ze skupiny " + group + " se sourceGroupId: " + sourceGroupId);
 		// save list of old group members
 		List<Member> oldMembers = this.getGroupMembers(sess, group);
+		log.error("C--"+randomNumber+"---: PUVODNI STAV skupiny " + group + " je " + oldMembers);
 
 		for (Member member: members) {
 			member.setSourceGroupId(sourceGroupId);
+			log.error("C--"+randomNumber+"---: Odstranuji membera " + member + " ze skupiny " + group);
 			groupsManagerImpl.removeMember(sess, group, member);
 		}
 
 		// get list of new members
 		List<Member> newMembers = this.getGroupMembers(sess, group);
+		System.out.println("C--"+randomNumber+"---: NOVY STAV skupiny " + group + " je " + newMembers);
 		// get only removed members
 		oldMembers.removeAll(newMembers);
 
+		log.error("C--"+randomNumber+"---: Memberi u kterych doslo ke smazani: " +  oldMembers);
+
 		for(Member removedIndirectMember: oldMembers) {
+			log.error("C--"+randomNumber+"---: Zapisuji zpravu do auditlogu.");
 			getPerunBl().getAuditer().log(sess, "{} was removed from {} totally.", removedIndirectMember, group);
 		}
 
@@ -593,18 +602,25 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	}
 
 	protected void removeDirectMember(PerunSession sess, Group group, Member member) throws InternalErrorException, NotGroupMemberException, GroupNotExistsException, GroupOperationsException {
+		Random random = new Random();
+		int randomNumber = random.nextInt(10);
+		log.error("A--" + randomNumber + "---ZACATEK: metoda removeDirectMember");
 		member.setSourceGroupId(group.getId());
+		log.error("A--" + randomNumber + "---: pro membera " + member);
 		getGroupsManagerImpl().removeMember(sess, group, member);
 		if (this.getGroupsManagerImpl().isGroupMember(sess, group, member)) {
+			log.error("A--" + randomNumber + "---KONEC: member " + member + " byl odstranen ze skupiny " + group);
 			getPerunBl().getAuditer().log(sess, "{} was removed from {}.", member, group);
 			//If member was indirect in group before, we don't need to change anything in other groups
 			return;
 		} else {
+			log.error("A--" + randomNumber + "---: member " + member + " byl odstranen ze skupiny " + group + " a bude probihat dalsi odstranovani.");
 			getPerunBl().getAuditer().log(sess, "{} was removed from {} totally.", member, group);
 		}
 
 		// check all relations with this group and call processRelationMembers to reflect changes of removing member from group
 		List<Integer> relations = groupsManagerImpl.getResultGroupsIds(sess, group.getId());
+		log.error("A--" + randomNumber + "---: vycet IDcek skupin, ktere se musi take poresit " + relations);
 		for (Integer groupId : relations) {
 			processRelationMembers(sess, groupsManagerImpl.getGroupById(sess, groupId), Collections.singletonList(member), group.getId(), false);
 		}
@@ -2356,7 +2372,9 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 
 	@Override
 	public void processRelationMembers(PerunSession sess, Group resultGroup, List<Member> changedMembers, int sourceGroupId, boolean addition) throws GroupOperationsException {
-
+		Random random = new Random();
+		int randomNumber = random.nextInt(10);
+		log.error("B--"+ randomNumber + "---: ZACATEK: provadim zpracovani relaci pro resultGroup: " + resultGroup + " seznam memberu " + changedMembers + " a sourceGroupID: " + sourceGroupId);
 		List<Member> newMembers;
 
 		try {
@@ -2366,11 +2384,14 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				newMembers = removeIndirectMembers(sess, resultGroup, changedMembers, sourceGroupId);
 			}
 
+			log.error("B--"+ randomNumber + "---: Seznam memberu ke zpracovani je: " + newMembers);
+
 			if (newMembers.isEmpty()) {
 				return;
 			}
 
 			List<Integer> relations = groupsManagerImpl.getResultGroupsIds(sess, resultGroup.getId());
+			log.error("B--"+ randomNumber + "---: Seznam skupin, ktere je pro resultgroupu " + resultGroup +" take nutno zpracovat: " + relations);
 			for (Integer groupId : relations) {
 				processRelationMembers(sess, groupsManagerImpl.getGroupById(sess, groupId), newMembers, resultGroup.getId(), addition);
 			}
