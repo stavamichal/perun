@@ -1001,31 +1001,34 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 		return false;
 	}
 
+
+
 	/**
 	 * This method run in separate transaction.
 	 */
 	public List<String> synchronizeGroup(PerunSession sess, Group group) throws InternalErrorException, MemberAlreadyRemovedException, AttributeNotExistsException, WrongAttributeAssignmentException, ExtSourceNotExistsException, WrongAttributeValueException, WrongReferenceAttributeValueException, GroupOperationsException, NotMemberOfParentGroupException, GroupNotExistsException {
+		log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- START of synchronization method");
 		//needed variables for whole method
 		List<String> skippedMembers = new ArrayList<>();
 		ExtSource source = null;
 		ExtSource membersSource = null;
 
 		try {
-			log.info("Group synchronization {}: started.", group);
-
 			//Initialization of group extSource
 			source = getGroupExtSourceForSynchronization(sess, group);
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Initialization of group source = " + source);
 
 			//Initialization of groupMembers extSource (if it is set), in other case set membersSource = source
 			membersSource = getGroupMembersExtSourceForSynchronization(sess, group, source);
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Initialization of member source = " + membersSource);
 
 			//Prepare info about userAttributes which need to be overwrite (not just updated)
 			List<String> overwriteUserAttributesList = getOverwriteUserAttributesListFromExtSource(membersSource);
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Preparing list of overwrite user attributes = " + overwriteUserAttributesList);
 
 			//Get info about type of synchronization (with or without update)
 			boolean lightweightSynchronization = isThisLightweightSynchronization(sess, group);
-
-			log.info("Group synchronization {}: using configuration extSource for membership {}, extSource for members {}", new Object[] {group, membersSource, membersSource.getName()});
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Lightweight synchronization = " + lightweightSynchronization);
 
 			//Prepare containers for work with group members
 			List<Candidate> candidatesToAdd = new ArrayList<>();
@@ -1034,32 +1037,49 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 
 			//get all actual members of group
 			List<RichMember> actualGroupMembers = getPerunBl().getGroupsManagerBl().getGroupRichMembers(sess, group);
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Actual count of group members = " + actualGroupMembers.size());
 
 			if(lightweightSynchronization) {
+				log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Lightweight categorizing process starting.");
 				categorizeMembersForLightweightSynchronization(sess, group, source, membersSource, actualGroupMembers, candidatesToAdd, membersToRemove, skippedMembers);
+				log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Lightweight categorizing process finished!");
 			} else {
+				log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Normal categorizing process starting.");
 				//Get subjects from extSource
+				log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- getSubjectsFromExtSource - start");
 				List<Map<String, String>> subjects = getSubjectsFromExtSource(sess, source, group);
+				log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- getSubjectsFromExtSource - finished with " + subjects.size() + " subjects");
 				//Convert subjects to candidates
+				log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- convertSubjectsToCandidates - start");
 				List<Candidate> candidates = convertSubjectsToCandidates(sess, subjects, membersSource, source, skippedMembers);
+				log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- convertSubjectsToCandidates - finished with " + candidates.size() + " candidates");
 
+				log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- categorizeMembersForSynchronization - start");
 				categorizeMembersForSynchronization(sess, actualGroupMembers, candidates, candidatesToAdd, membersToUpdate, membersToRemove);
+				log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- categorizeMembersForSynchronization - finished");
 			}
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Categorizing process finished!.");
 
 			//Update members already presented in group
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Updating of " + membersToUpdate.size() + " starting.");
 			updateExistingMembersWhileSynchronization(sess, group, membersToUpdate, overwriteUserAttributesList);
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Updating finished!");
 
 			//Add not presented candidates to group
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Adding new " + candidatesToAdd.size() + " starting.");
 			addMissingMembersWhileSynchronization(sess, group, candidatesToAdd, overwriteUserAttributesList, skippedMembers);
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Adding new finished!");
 
 			//Remove presented members in group who are not presented in synchronized ExtSource
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Removing of " + membersToRemove.size() + " starting.");
 			removeFormerMembersWhileSynchronization(sess, group, membersToRemove);
-
-			log.info("Group synchronization {}: ended.", group);
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Removing finished!");
 		} finally {
+			log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- closing extsource after synchronization ends");
 			closeExtSourcesAfterSynchronization(membersSource, source);
 		}
 
+		log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- Synchronization DONE with " + skippedMembers.size() + " skipped members.");
 		return skippedMembers;
 	}
 
@@ -1640,14 +1660,18 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	 * @throws ExtSourceNotExistsException
 	 */
 	private void categorizeMembersForLightweightSynchronization(PerunSession sess, Group group, ExtSource loginSource, ExtSource memberSource, List<RichMember> groupMembers, List<Candidate> candidatesToAdd, List<RichMember> membersToRemove, List<String> skippedMembers) throws InternalErrorException, ExtSourceNotExistsException {
+		log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- categorizeMembersForLightweightSynchronization - start");
 		//Get subjects from loginSource
 		List<Map<String, String>> subjects = getSubjectsFromExtSource(sess, loginSource, group);
+
+		log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- categorizeMembersForLightweightSynchronization - subjects count is " + subjects.size());
 
 		//Prepare structure of userIds with richMembers to better work with actual members
 		Map<Integer, RichMember> idsOfUsersInGroup = new HashMap<>();
 		for(RichMember richMember: groupMembers) {
 			idsOfUsersInGroup.put(richMember.getUserId(), richMember);
 		}
+		log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- categorizeMembersForLightweightSynchronization - map of richMembers prepared");
 
 		//try to find users by login and loginSource
 		for(Map<String, String> subjectFromLoginSource : subjects) {
@@ -1658,6 +1682,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				skippedMembers.add("MemberEntry:[" + subjectFromLoginSource + "] was skipped because login is missing");
 				continue;
 			}
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- categorizeMembersForLightweightSynchronization - categorize subject " + login);
 
 			//try to find user from perun by login and member extSource (need to use memberSource because loginSource is not saved by synchronization)
 			User user = null;
@@ -1705,6 +1730,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 
 		//Rest of them need to be removed
 		membersToRemove.addAll(idsOfUsersInGroup.values());
+		log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- categorizeMembersForLightweightSynchronization - finished!");
 	}
 
 	/**
@@ -1977,6 +2003,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 		List<AttributeDefinition> attrDefs = new ArrayList<>();
 		//Iterate through all subject attributes
 		for(Candidate candidate: membersToUpdate.keySet()) {
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to update: " + candidate);
 			RichMember richMember = membersToUpdate.get(candidate);
 
 			//If member not exists in this moment (somebody remove him before start of updating), skip him and log it
@@ -1988,6 +2015,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				continue;
 			}
 
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to update - load attr defs");
 			//load attrDefinitions just once for first candidate
 			if(attrDefs.isEmpty()) {
 				for(String attrName : candidate.getAttributes().keySet()) {
@@ -2001,9 +2029,11 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				}
 			}
 
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to update - get rich members");
 			//get RichMember with attributes
 			richMember = getPerunBl().getMembersManagerBl().convertMembersToRichMembersWithAttributes(sess, Arrays.asList(richMember), attrDefs).get(0);
 
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to update - updating core attributes");
 			// try to find user core attributes and update user -> update name and titles
 			if (overwriteUserAttributesList != null) {
 				boolean someFound = false;
@@ -2035,6 +2065,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				}
 			}
 
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to update - updating def attributes");
 			for (String attributeName : candidate.getAttributes().keySet()) {
 				//update member attribute
 				if(attributeName.startsWith(AttributesManager.NS_MEMBER_ATTR)) {
@@ -2127,6 +2158,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				}
 			}
 
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to update - updating extSource");
 			//Synchronize userExtSources (add not existing)
 			for (UserExtSource ues : candidate.getUserExtSources()) {
 				if (!getPerunBl().getUsersManagerBl().userExtSourceExists(sess, ues)) {
@@ -2138,6 +2170,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				}
 			}
 
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to update - updating status");
 			//Set correct member Status
 			// If the member has expired or disabled status, try to expire/validate him (depending on expiration date)
 			if (richMember.getStatus().equals(Status.DISABLED) || richMember.getStatus().equals(Status.EXPIRED)) {
@@ -2196,7 +2229,9 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 			} catch (WrongReferenceAttributeValueException e) {
 				log.info("Switching member id {} into INVALID state from DISABLED, because there was problem with attributes {}.", richMember.getId(), e);
 			}
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to update - finished!");
 		}
+		log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- updating all candidates - finished!");
 	}
 
 	/**
@@ -2216,8 +2251,12 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	 * @throws InternalErrorException if some internal error occurs
 	 */
 	private void addMissingMembersWhileSynchronization(PerunSession sess, Group group, List<Candidate> candidatesToAdd, List<String> overwriteUserAttributesList, List<String> skippedMembers) throws InternalErrorException, GroupOperationsException {
+		log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to add - ");
 		// Now add missing members
 		for (Candidate candidate: candidatesToAdd) {
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to add - " + candidate);
+
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to add - check if member is in vo");
 			Member member = null;
 			try {
 				// Check if the member is already in the VO (just not in the group)
@@ -2253,6 +2292,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				}
 			}
 
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to add - add member to group");
 			try {
 				// Add the member to the group
 				if (!group.getName().equals(VosManager.MEMBERS_GROUP)) {
@@ -2275,13 +2315,16 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				getPerunBl().getMembersManagerBl().invalidateMember(sess, member);
 			}
 
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to add - validate member");
 			// Try to validate member
 			try {
 				getPerunBl().getMembersManagerBl().validateMember(sess, member);
 			} catch (AttributeValueException e) {
 				log.warn("Member id {} will be in INVALID status due to wrong attributes {}.", member.getId(), e);
 			}
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- candidate to add - finished!");
 		}
+		log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- all candidates to add - finished! ");
 	}
 
 	/**
@@ -2301,6 +2344,7 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 	 */
 	private void removeFormerMembersWhileSynchronization(PerunSession sess, Group group, List<RichMember> membersToRemove) throws InternalErrorException, WrongAttributeAssignmentException, MemberAlreadyRemovedException, GroupOperationsException, GroupNotExistsException {
 		//First get information if this group is authoritative group
+
 		boolean thisGroupIsAuthoritativeGroup = false;
 		try {
 			Attribute authoritativeGroupAttr = getPerunBl().getAttributesManagerBl().getAttribute(sess, group, A_G_D_AUTHORITATIVE_GROUP);
@@ -2312,9 +2356,11 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 			//Means that this group is not authoritative
 			log.error("Attribute {} doesn't exists.", A_G_D_AUTHORITATIVE_GROUP);
 		}
+		log.info("SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- removing candidates - authoritative group definition = " + thisGroupIsAuthoritativeGroup);
 
 		//Second remove members (use authoritative group where is needed)
 		for (RichMember member: membersToRemove) {
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- member to remove - " + member);
 			// Member is missing in the external group, so remove him from the perun group
 			try {
 				//members group
@@ -2378,7 +2424,9 @@ public class GroupsManagerBlImpl implements GroupsManagerBl {
 				log.debug("Member {} was removed from group {} before removing process. Skip this member.", member, group);
 				continue;
 			}
+			log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- member to remove - finished!");
 		}
+		log.info("BULKED_SPECIAL_DEBUG: (GrID: " + group.getId() + ") -- all members to remove - finished!");
 	}
 
 	/**
