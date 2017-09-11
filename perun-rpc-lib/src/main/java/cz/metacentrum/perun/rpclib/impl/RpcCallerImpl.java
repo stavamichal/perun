@@ -77,6 +77,8 @@ public class RpcCallerImpl implements RpcCaller {
 		// If Perun's RPC is temporarily unavailable, and Apache respond in HTML instead of JSON
 		try {
 			int responseCode = conn.getResponseCode();
+			log.debug(params.toString());
+			log.debug(conn.getResponseMessage());
 			if (responseCode != HttpURLConnection.HTTP_OK) {
 				throw new RpcException(RpcException.Type.PERUN_RPC_SERVER_ERROR_HTTP_CODE, "Perun server on URL: " + perunUrl + " returned HTTP code: " + responseCode);
 			}
