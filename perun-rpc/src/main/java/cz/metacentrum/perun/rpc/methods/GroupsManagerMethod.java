@@ -174,6 +174,28 @@ public enum GroupsManagerMethod implements ManagerMethod {
 	},
 
 	/*#
+	 * Create union of two groups, where "operandGroup" is technically set as subgroup of "resultGroup".
+	 * Members from "operandGroup" are added to "resultGroup" as INDIRECT members. Union is honored also
+	 * in all group member changing operations.
+	 *
+	 * @param resultGroup int <code>id</code> of Group to have included "operandGroup"
+	 * @param operandGroup int <code>id</code> of Group to be included into "resultGroup"
+	 * @return Group Result group
+	 */
+	moveGroup {
+
+		@Override
+		public Void call(ApiCaller ac, Deserializer parms) throws PerunException {
+			ac.stateChangingCheck();
+
+			ac.getGroupsManager().moveGroup(ac.getSession(),
+					ac.getGroupById(parms.readInt("destinationGroup")),
+					ac.getGroupById(parms.readInt("movingGroup")));
+			return null;
+		}
+	},
+
+	/*#
 	 * Returns a group by <code>id</code>.
 	 *
 	 * @param id int Group <code>id</code>
