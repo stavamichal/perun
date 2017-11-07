@@ -18,6 +18,9 @@ import cz.metacentrum.perun.core.api.exceptions.WrongReferenceAttributeValueExce
 import cz.metacentrum.perun.core.impl.PerunSessionImpl;
 import cz.metacentrum.perun.core.implApi.modules.attributes.GroupAttributesModuleAbstract;
 import cz.metacentrum.perun.core.implApi.modules.attributes.GroupAttributesModuleImplApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,6 +32,7 @@ public class urn_perun_group_attribute_def_def_unixGroupName_namespace extends G
 
 	private static final String A_R_unixGroupName_namespace = AttributesManager.NS_RESOURCE_ATTR_DEF + ":unixGroupName-namespace";
 	private static final String A_G_unixGID_namespace = AttributesManager.NS_GROUP_ATTR_DEF + ":unixGID-namespace";
+	private final static Logger log = LoggerFactory.getLogger(urn_perun_group_attribute_def_def_unixGroupName_namespace.class);
 
 	@Override
 	public void checkAttributeValue(PerunSessionImpl sess, Group group, Attribute attribute) throws InternalErrorException, WrongAttributeValueException, WrongReferenceAttributeValueException, WrongAttributeAssignmentException{
@@ -48,6 +52,7 @@ public class urn_perun_group_attribute_def_def_unixGroupName_namespace extends G
 		//Check reserved unix group names
 		sess.getPerunBl().getModulesUtilsBl().checkReservedUnixGroupNames(attribute);
 
+		log.error("SAVEPOINT-01: START for: " + group + " and: " + attribute);
 		try {
 			//prepare attributes group and resource unixGroupName
 			Attribute groupUnixGroupName = attribute;
@@ -61,13 +66,23 @@ public class urn_perun_group_attribute_def_def_unixGroupName_namespace extends G
 			//Fill lists of groups and resources
 			groupsWithSameGroupNameInTheSameNamespace.addAll(sess.getPerunBl().getGroupsManagerBl().getGroupsByAttribute(sess, groupUnixGroupName));
 			resourcesWithSameGroupNameInTheSameNamespace.addAll(sess.getPerunBl().getResourcesManagerBl().getResourcesByAttribute(sess, resourceUnixGroupName));
+			//Remove self from the list
+			groupsWithSameGroupNameInTheSameNamespace.remove(group);
+
+			log.error("SAVEPOINT-02: BEFORE TESTING DUPLICITY");
 
 			//If there is no group or resource with same GroupNameInTheSameNamespace, its ok
 			if(groupsWithSameGroupNameInTheSameNamespace.isEmpty() && resourcesWithSameGroupNameInTheSameNamespace.isEmpty()) return;
 
+			log.error("SAVEPOINT-03: AFTER TESTING DUPLICITY");
+			log.error("SAVEPOINT INFO: groupsWithSameGroupName " + groupsWithSameGroupNameInTheSameNamespace);
+			log.error("SAVEPOINT INFO: resourcesWithSameGroupName " + resourcesWithSameGroupNameInTheSameNamespace);
+
 			//First need to know that i have right to write any of duplicit groupName-namespace attribute
 			boolean haveRights = sess.getPerunBl().getModulesUtilsBl().haveRightToWriteAttributeInAnyGroupOrResource(sess, groupsWithSameGroupNameInTheSameNamespace, resourcesWithSameGroupNameInTheSameNamespace, groupUnixGroupName, resourceUnixGroupName);
 			if(!haveRights) throw new WrongReferenceAttributeValueException(attribute, "This groupName is already used for other group or resource and user has no rights to use it.");
+
+			log.error("SAVEPOINT-04: AFTER CHECKING RIGHTS - HAVE RIGHTS!");
 
 			//Now if rights are ok, prepare lists of UnixGIDs attributes of this group (also equivalent resource GID)
 			List<Attribute> groupUnixGIDs = sess.getPerunBl().getAttributesManagerBl().getAllAttributesStartWithNameWithoutNullValue(sess, group, A_G_unixGID_namespace + ":");
@@ -87,6 +102,8 @@ public class urn_perun_group_attribute_def_def_unixGroupName_namespace extends G
 				}
 			}
 
+			log.error("SAVEPOINT-05: AFTER DIFFERENT COMBINATION GID+GROUP_NAME EXISTS for groups");
+
 			//In list of duplicit resources looking for GID in same namespace but with different value, thats not correct
 			if(!resourcesWithSameGroupNameInTheSameNamespace.isEmpty()) {
 				for(Resource r: resourcesWithSameGroupNameInTheSameNamespace) {
@@ -100,6 +117,8 @@ public class urn_perun_group_attribute_def_def_unixGroupName_namespace extends G
 					}
 				}
 			}
+
+			log.error("SAVEPOINT-06: AFTER DIFFERENT COMBINATION GID+GROUP_NAME EXISTS for resources");
 
 		} catch(AttributeNotExistsException ex) {
 			throw new ConsistencyErrorException(ex);
