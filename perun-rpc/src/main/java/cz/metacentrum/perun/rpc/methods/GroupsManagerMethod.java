@@ -188,9 +188,15 @@ public enum GroupsManagerMethod implements ManagerMethod {
 		public Void call(ApiCaller ac, Deserializer parms) throws PerunException {
 			ac.stateChangingCheck();
 
-			ac.getGroupsManager().moveGroup(ac.getSession(),
-					ac.getGroupById(parms.readInt("destinationGroup")),
-					ac.getGroupById(parms.readInt("movingGroup")));
+			if(parms.contains("destinationGroup")) {
+				ac.getGroupsManager().moveGroup(ac.getSession(),
+						ac.getGroupById(parms.readInt("destinationGroup")),
+						ac.getGroupById(parms.readInt("movingGroup")));
+			} else {
+				ac.getGroupsManager().moveGroup(ac.getSession(),
+						null,
+						ac.getGroupById(parms.readInt("movingGroup")));
+			}
 			return null;
 		}
 	},
