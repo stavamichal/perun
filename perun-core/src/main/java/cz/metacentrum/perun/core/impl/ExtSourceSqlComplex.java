@@ -158,7 +158,11 @@ public class ExtSourceSqlComplex extends ExtSource implements ExtSourceApi {
 				st.setMaxRows(maxResults);
 
 			}
+			
+			long startTime = System.nanoTime();
 			rs = st.executeQuery();
+			long estimatedTime = System.nanoTime() - startTime;
+			log.debug("Searching for '" + searchString + "' last for '" + estimatedTime + "' nano seconds.");
 
 			List<Map<String, String>> subjects = new ArrayList<Map<String, String>>();
 
