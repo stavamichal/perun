@@ -88,6 +88,7 @@ import cz.metacentrum.perun.core.api.exceptions.WrongAttributeValueException;
 import cz.metacentrum.perun.core.api.exceptions.WrongReferenceAttributeValueException;
 import cz.metacentrum.perun.core.bl.AttributesManagerBl;
 import cz.metacentrum.perun.core.bl.PerunBl;
+import cz.metacentrum.perun.core.impl.Compatibility;
 import cz.metacentrum.perun.utils.graphs.Graph;
 import cz.metacentrum.perun.utils.graphs.GraphEdge;
 import cz.metacentrum.perun.utils.graphs.Node;
@@ -7411,21 +7412,25 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	 * @return map of users in keys with list of their user-facility attributes in value
 	 */
 	private HashMap<User, List<Attribute>> getRequiredAttributesForBulk(PerunSession sess, Service service, Facility facility, List<User> users) throws InternalErrorException {
-		if (users.size() <= MAX_SIZE_OF_BULK_IN_SQL)
+		if(Compatibility.isOracle()) {
 			return getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users);
+		} else {
+			if (users.size() <= MAX_SIZE_OF_BULK_IN_SQL)
+				return getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users);
 
-		HashMap<User, List<Attribute>> userFacAttrs = new HashMap<>();
+			HashMap<User, List<Attribute>> userFacAttrs = new HashMap<>();
 
-		int from = 0;
-		int to = MAX_SIZE_OF_BULK_IN_SQL;
-		do {
-			userFacAttrs.putAll(getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users.subList(from, to)));
-			from += MAX_SIZE_OF_BULK_IN_SQL;
-			to += MAX_SIZE_OF_BULK_IN_SQL;
-		} while (users.size() > to);
-		userFacAttrs.putAll(getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users.subList(from, users.size())));
+			int from = 0;
+			int to = MAX_SIZE_OF_BULK_IN_SQL;
+			do {
+				userFacAttrs.putAll(getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users.subList(from, to)));
+				from += MAX_SIZE_OF_BULK_IN_SQL;
+				to += MAX_SIZE_OF_BULK_IN_SQL;
+			} while (users.size() > to);
+			userFacAttrs.putAll(getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users.subList(from, users.size())));
 
-		return userFacAttrs;
+			return userFacAttrs;
+		}
 	}
 
 	/**

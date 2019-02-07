@@ -52,7 +52,6 @@ import cz.metacentrum.perun.core.implApi.modules.attributes.UserAttributesModule
 import cz.metacentrum.perun.core.implApi.modules.attributes.UserExtSourceAttributesModuleImplApi;
 import cz.metacentrum.perun.core.implApi.modules.attributes.UserExtSourceVirtualAttributesModuleImplApi;
 import cz.metacentrum.perun.core.implApi.modules.attributes.UserVirtualAttributesModuleImplApi;
-import cz.metacentrum.perun.core.implApi.modules.attributes.VirtualAttributesModuleImplApi;
 import cz.metacentrum.perun.core.implApi.modules.attributes.VoAttributesModuleImplApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +60,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcPerunTemplate;
+import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -74,6 +74,7 @@ import java.lang.IllegalArgumentException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Clob;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -3468,17 +3469,52 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 			return hashMap;
 		}
 
-		try {
-			return jdbc.query("SELECT " + getAttributeMappingSelectQuery("usr_fac") + ", users.id FROM attr_names " +
-							"JOIN service_required_attrs ON attr_names.id=service_required_attrs.attr_id AND service_required_attrs.service_id=? " +
-							"JOIN users ON " + BeansUtils.prepareInSQLClause("users.id", users) +
-							"LEFT JOIN user_facility_attr_values usr_fac ON attr_names.id=usr_fac.attr_id AND facility_id=? AND user_id=users.id " +
-							"WHERE namespace IN (?,?,?)",
+		if(Compatibility.isOracle()) {
+			return jdbc.execute("SELECT " + getAttributeMappingSelectQuery("usr_fac") + ", users.id FROM attr_names " +
+				"JOIN service_required_attrs ON attr_names.id=service_required_attrs.attr_id AND service_required_attrs.service_id=? " +
+				"JOIN users ON users.id in (SELECT * FROM TABLE(?)) " +
+				"LEFT JOIN user_facility_attr_values usr_fac ON attr_names.id=usr_fac.attr_id AND facility_id=? AND user_id=users.id " +
+				"WHERE namespace IN (?,?,?)", (PreparedStatementCallback<HashMap<User, List<Attribute>>>) preparedStatement -> {
+					int[] arrayOfUserIds = new int[users.size()];
+					int iterator = 0;
+					for(User user: users) {
+						arrayOfUserIds[iterator] = user.getId();
+						iterator++;
+					}
+					Connection oracleConnection = preparedStatement.getConnection().unwrap(Connection.class);
+					java.sql.Array sqlArray;
+					String nameOfMethod = "createOracleArray";
+					try {
+						Method createOracleArrayMethod = oracleConnection.getClass().getMethod(nameOfMethod, String.class, Object.class);
+						createOracleArrayMethod.setAccessible(true);
+						sqlArray = (java.sql.Array) createOracleArrayMethod.invoke(oracleConnection, "PERUN.TPOLECISEL", arrayOfUserIds);
+					} catch (NoSuchMethodException ex) {
+						throw new RuntimeException("Can't find method '" + nameOfMethod + "'!", ex);
+					} catch (InvocationTargetException | IllegalAccessException  ex) {
+						throw new RuntimeException("Can't invoke method '" + nameOfMethod + "'!", ex);
+					}
+					preparedStatement.setInt(1, service.getId());
+					preparedStatement.setArray(2, sqlArray);
+					preparedStatement.setInt(3, facility.getId());
+					preparedStatement.setNString(4, AttributesManager.NS_USER_FACILITY_ATTR_DEF);
+					preparedStatement.setNString(5, AttributesManager.NS_USER_FACILITY_ATTR_OPT);
+					preparedStatement.setNString(6, AttributesManager.NS_USER_FACILITY_ATTR_VIRT);
+					UserAttributeExtractor userAttributeExtractor = new UserAttributeExtractor(sess, this, users, facility);
+					return userAttributeExtractor.extractData(preparedStatement.executeQuery());
+				});
+		} else {
+			try {
+				return jdbc.query("SELECT " + getAttributeMappingSelectQuery("usr_fac") + ", users.id FROM attr_names " +
+						"JOIN service_required_attrs ON attr_names.id=service_required_attrs.attr_id AND service_required_attrs.service_id=? " +
+						"JOIN users ON " + BeansUtils.prepareInSQLClause("users.id", users) +
+						"LEFT JOIN user_facility_attr_values usr_fac ON attr_names.id=usr_fac.attr_id AND facility_id=? AND user_id=users.id " +
+						"WHERE namespace IN (?,?,?)",
 					new UserAttributeExtractor(sess, this, users, facility), service.getId(), facility.getId(), AttributesManager.NS_USER_FACILITY_ATTR_DEF, AttributesManager.NS_USER_FACILITY_ATTR_OPT, AttributesManager.NS_USER_FACILITY_ATTR_VIRT);
-		} catch (EmptyResultDataAccessException ex) {
-			return new HashMap<>();
-		} catch (RuntimeException ex) {
-			throw new InternalErrorException(ex);
+			} catch (EmptyResultDataAccessException ex) {
+				return new HashMap<>();
+			} catch (RuntimeException ex) {
+				throw new InternalErrorException(ex);
+			}
 		}
 	}
 
