@@ -2232,6 +2232,22 @@ public interface AttributesManager {
 	HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users) throws InternalErrorException, ServiceNotExistsException, FacilityNotExistsException, UserNotExistsException;
 
 	/**
+	 * Get user-facility attributes which are required by the service for each user in list of users.
+	 *
+	 * @param sess     perun session
+	 * @param service  attribute required by this service
+	 * @param facility you get attributes for this facility and user
+	 * @param users    you get attributes for this user and facility
+	 * @param newWay   if true, it will use new way of working with IN clause (just for oracle)
+	 * @return map of user and his list of attributes
+	 * @throws InternalErrorException     if an exception raise in concrete implementation, the exception is wrapped in InternalErrorException
+	 * @throws ServiceNotExistsException  if the service doesn't exists in underlying data source
+	 * @throws FacilityNotExistsException if the facility wasn't created from this resource
+	 * @throws UserNotExistsException     if the host doesn't exists in the underlying data source
+	 */
+	HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users, boolean newWay) throws InternalErrorException, ServiceNotExistsException, FacilityNotExistsException, UserNotExistsException;
+
+	/**
 	 * Get user attributes which are required by the service for each user in list of users.
 	 *
 	 * @param sess    perun session

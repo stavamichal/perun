@@ -323,7 +323,8 @@ public class ServicesManagerBlImpl implements ServicesManagerBl {
 	}
 
 	@Override
-	public ServiceAttributes getFlatData(PerunSession sess, Service service, Facility facility) throws InternalErrorException {
+	public ServiceAttributes getFlatData(PerunSession sess, Service service, Facility facility, boolean newWay) throws InternalErrorException {
+		long before = System.currentTimeMillis();
 		ServiceAttributes serviceAttributes = new ServiceAttributes();
 		serviceAttributes.addAttributes(getPerunBl().getAttributesManagerBl().getRequiredAttributes(sess, service, facility));
 
@@ -340,7 +341,7 @@ public class ServicesManagerBlImpl implements ServicesManagerBl {
 		List<User> facilityUsers = getPerunBl().getFacilitiesManagerBl().getAllowedUsers(sess, facility, null, service);
 
 		// get attributes for all users at once !
-		HashMap<User, List<Attribute>> userFacilityAttributes = getPerunBl().getAttributesManagerBl().getRequiredAttributes(sess, service, facility, facilityUsers);
+		HashMap<User, List<Attribute>> userFacilityAttributes = getPerunBl().getAttributesManagerBl().getRequiredAttributes(sess, service, facility, facilityUsers, newWay);
 		HashMap<User, List<Attribute>> userAttributes = getPerunBl().getAttributesManagerBl().getRequiredAttributes(sess, service, facilityUsers);
 
 		for (User user : facilityUsers) {
@@ -353,10 +354,20 @@ public class ServicesManagerBlImpl implements ServicesManagerBl {
 
 		serviceAttributes.addChildElement(allResourcesServiceAttributes);
 		serviceAttributes.addChildElement(allUsersServiceAttributes);
+		long after = System.currentTimeMillis();
+		long estimatedTime = after - before;
+		if(newWay) {
+			log.debug("getFlatData-NEW took: " + estimatedTime + " ms");
+		} else {
+			log.debug("getFlatData-OLD took: " + estimatedTime + " ms");
+		}
 
 		return serviceAttributes;
+	}
 
-
+	@Override
+	public ServiceAttributes getFlatData(PerunSession sess, Service service, Facility facility) throws InternalErrorException {
+		return this.getFlatData(sess, service, facility, false);
 	}
 
 	@Override

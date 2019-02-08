@@ -2232,28 +2232,33 @@ public class AttributesManagerEntry implements AttributesManager {
 
 	@Override
 	public HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users) throws InternalErrorException, ServiceNotExistsException, FacilityNotExistsException, UserNotExistsException {
+		return this.getRequiredAttributes(sess, service, facility, users, false);
+	}
+
+	@Override
+	public HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users, boolean newWay) throws InternalErrorException, ServiceNotExistsException, FacilityNotExistsException, UserNotExistsException {
 		Utils.checkPerunSession(sess);
 		getPerunBl().getServicesManagerBl().checkServiceExists(sess, service);
 		getPerunBl().getFacilitiesManagerBl().checkFacilityExists(sess, facility);
 		for (User user : users) {
 			getPerunBl().getUsersManagerBl().checkUserExists(sess, user);
 		}
-		HashMap<User, List<Attribute>> result = getAttributesManagerBl().getRequiredAttributes(sess, service, facility, users);
+		HashMap<User, List<Attribute>> result = getAttributesManagerBl().getRequiredAttributes(sess, service, facility, users, newWay);
 		for (User user : result.keySet()) {
 			Iterator<Attribute> attrIter = result.get(user).iterator();
 			//Choose to which attributes has the principal access
-					while (attrIter.hasNext()) {
+			while (attrIter.hasNext()) {
 				Attribute attrNext = attrIter.next();
 				if (getAttributesManagerBl().isFromNamespace(sess, attrNext, NS_USER_FACILITY_ATTR)) {
 					if (!AuthzResolver.isAuthorizedForAttribute(sess, ActionType.READ, attrNext, user, facility))
 						attrIter.remove();
 					else
-					attrNext.setWritable(AuthzResolver.isAuthorizedForAttribute(sess, ActionType.WRITE, attrNext, user, facility));
-					} else {
+						attrNext.setWritable(AuthzResolver.isAuthorizedForAttribute(sess, ActionType.WRITE, attrNext, user, facility));
+				} else {
 					throw new ConsistencyErrorException("There is some attribute which is not type of any possible choice.");
-					}
 				}
 			}
+		}
 		return result;
 	}
 

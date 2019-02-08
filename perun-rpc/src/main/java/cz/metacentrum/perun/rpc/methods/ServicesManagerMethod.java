@@ -217,9 +217,15 @@ public enum ServicesManagerMethod implements ManagerMethod {
 
 		@Override
 		public ServiceAttributes call(ApiCaller ac, Deserializer parms) throws PerunException {
-			return ac.getServicesManager().getFlatData(ac.getSession(),
+			if(parms.contains("newWay")) {
+				return ac.getServicesManager().getFlatData(ac.getSession(),
+					ac.getServiceById(parms.readInt("service")),
+					ac.getFacilityById(parms.readInt("facility")), true);
+			} else {
+				return ac.getServicesManager().getFlatData(ac.getSession(),
 					ac.getServiceById(parms.readInt("service")),
 					ac.getFacilityById(parms.readInt("facility")));
+			}
 		}
 	},
 

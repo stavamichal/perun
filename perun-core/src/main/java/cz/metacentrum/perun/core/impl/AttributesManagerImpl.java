@@ -3457,7 +3457,7 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 	}
 
 	@Override
-	public HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users) throws InternalErrorException {
+	public HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users, boolean newWay) throws InternalErrorException {
 		if(!CacheManager.isCacheDisabled() && !perun.getCacheManager().wasCacheUpdatedInTransaction()) {
 			List<Integer> attrIds = getRequiredAttributeIds(service);
 			HashMap<User, List<Attribute>> hashMap = new HashMap<>();
@@ -3469,8 +3469,9 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 			return hashMap;
 		}
 
-		if(Compatibility.isOracle()) {
-			return jdbc.execute("SELECT " + getAttributeMappingSelectQuery("usr_fac") + ", users.id FROM attr_names " +
+		if(newWay) {
+			long before = System.currentTimeMillis();
+			HashMap<User, List<Attribute>> returnedData = jdbc.execute("SELECT " + getAttributeMappingSelectQuery("usr_fac") + ", users.id FROM attr_names " +
 				"JOIN service_required_attrs ON attr_names.id=service_required_attrs.attr_id AND service_required_attrs.service_id=? " +
 				"JOIN users ON users.id in (SELECT * FROM TABLE(?)) " +
 				"LEFT JOIN user_facility_attr_values usr_fac ON attr_names.id=usr_fac.attr_id AND facility_id=? AND user_id=users.id " +
@@ -3502,14 +3503,23 @@ public class AttributesManagerImpl implements AttributesManagerImplApi {
 					UserAttributeExtractor userAttributeExtractor = new UserAttributeExtractor(sess, this, users, facility);
 					return userAttributeExtractor.extractData(preparedStatement.executeQuery());
 				});
+			long after = System.currentTimeMillis();
+			long estimatedTime = after-before;
+			log.debug("getRequiredAttributes-NEW took: " + estimatedTime + " ms");
+			 return returnedData;
 		} else {
 			try {
-				return jdbc.query("SELECT " + getAttributeMappingSelectQuery("usr_fac") + ", users.id FROM attr_names " +
+				long before = System.currentTimeMillis();
+				HashMap<User, List<Attribute>> returnedData =  jdbc.query("SELECT " + getAttributeMappingSelectQuery("usr_fac") + ", users.id FROM attr_names " +
 						"JOIN service_required_attrs ON attr_names.id=service_required_attrs.attr_id AND service_required_attrs.service_id=? " +
 						"JOIN users ON " + BeansUtils.prepareInSQLClause("users.id", users) +
 						"LEFT JOIN user_facility_attr_values usr_fac ON attr_names.id=usr_fac.attr_id AND facility_id=? AND user_id=users.id " +
 						"WHERE namespace IN (?,?,?)",
 					new UserAttributeExtractor(sess, this, users, facility), service.getId(), facility.getId(), AttributesManager.NS_USER_FACILITY_ATTR_DEF, AttributesManager.NS_USER_FACILITY_ATTR_OPT, AttributesManager.NS_USER_FACILITY_ATTR_VIRT);
+				long after = System.currentTimeMillis();
+				long estimatedTime = after-before;
+				log.debug("getRequiredAttributes-OLD took: " + estimatedTime + " ms");
+				return returnedData;
 			} catch (EmptyResultDataAccessException ex) {
 				return new HashMap<>();
 			} catch (RuntimeException ex) {

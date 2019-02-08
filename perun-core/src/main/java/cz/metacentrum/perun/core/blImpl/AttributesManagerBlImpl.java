@@ -2903,11 +2903,16 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	}
 
 	@Override
-	public HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users) throws InternalErrorException {
+	public HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users, boolean newWay) throws InternalErrorException {
 		if (!users.isEmpty()) {
-			return getRequiredAttributesForBulk(sess, service, facility, users);
+			return getRequiredAttributesForBulk(sess, service, facility, users, newWay);
 		}
 		return new HashMap<>();
+	}
+
+	@Override
+	public HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users) throws InternalErrorException {
+		return this.getRequiredAttributes(sess, service, facility, users, false);
 	}
 
 	@Override
@@ -7411,23 +7416,23 @@ public class AttributesManagerBlImpl implements AttributesManagerBl {
 	 * @param users    users to get required attributes for
 	 * @return map of users in keys with list of their user-facility attributes in value
 	 */
-	private HashMap<User, List<Attribute>> getRequiredAttributesForBulk(PerunSession sess, Service service, Facility facility, List<User> users) throws InternalErrorException {
-		if(Compatibility.isOracle()) {
-			return getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users);
+	private HashMap<User, List<Attribute>> getRequiredAttributesForBulk(PerunSession sess, Service service, Facility facility, List<User> users, boolean newWay) throws InternalErrorException {
+		if(newWay) {
+			return getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users, newWay);
 		} else {
 			if (users.size() <= MAX_SIZE_OF_BULK_IN_SQL)
-				return getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users);
+				return getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users, false);
 
 			HashMap<User, List<Attribute>> userFacAttrs = new HashMap<>();
 
 			int from = 0;
 			int to = MAX_SIZE_OF_BULK_IN_SQL;
 			do {
-				userFacAttrs.putAll(getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users.subList(from, to)));
+				userFacAttrs.putAll(getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users.subList(from, to), false));
 				from += MAX_SIZE_OF_BULK_IN_SQL;
 				to += MAX_SIZE_OF_BULK_IN_SQL;
 			} while (users.size() > to);
-			userFacAttrs.putAll(getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users.subList(from, users.size())));
+			userFacAttrs.putAll(getAttributesManagerImpl().getRequiredAttributes(sess, service, facility, users.subList(from, users.size()), false));
 
 			return userFacAttrs;
 		}

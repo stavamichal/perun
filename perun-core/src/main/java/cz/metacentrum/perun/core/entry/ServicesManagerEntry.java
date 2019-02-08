@@ -195,19 +195,24 @@ public class ServicesManagerEntry implements ServicesManager {
 	}
 
 	@Override
-	public ServiceAttributes getFlatData(PerunSession sess, Service service, Facility facility) throws InternalErrorException, FacilityNotExistsException, ServiceNotExistsException, PrivilegeException {
+	public ServiceAttributes getFlatData(PerunSession sess, Service service, Facility facility, boolean newWay) throws InternalErrorException, FacilityNotExistsException, ServiceNotExistsException, PrivilegeException {
 		Utils.checkPerunSession(sess);
 
 		// Authorization
 		if (!AuthzResolver.isAuthorized(sess, Role.ENGINE) &&
-		    !AuthzResolver.isAuthorized(sess, Role.FACILITYADMIN, facility)) {
+			!AuthzResolver.isAuthorized(sess, Role.FACILITYADMIN, facility)) {
 			throw new PrivilegeException(sess, "getFlatData");
 		}
 
 		getServicesManagerBl().checkServiceExists(sess, service);
 		getPerunBl().getFacilitiesManagerBl().checkFacilityExists(sess, facility);
 
-		return getServicesManagerBl().getFlatData(sess, service, facility);
+		return getServicesManagerBl().getFlatData(sess, service, facility, newWay);
+	}
+
+	@Override
+	public ServiceAttributes getFlatData(PerunSession sess, Service service, Facility facility) throws InternalErrorException, FacilityNotExistsException, ServiceNotExistsException, PrivilegeException {
+		return this.getFlatData(sess, service, facility, false);
 	}
 
 	@Override

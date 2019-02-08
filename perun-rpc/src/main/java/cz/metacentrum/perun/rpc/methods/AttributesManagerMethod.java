@@ -1,6 +1,7 @@
 package cz.metacentrum.perun.rpc.methods;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import cz.metacentrum.perun.core.api.*;
@@ -1662,6 +1663,23 @@ public enum AttributesManagerMethod implements ManagerMethod {
 						ac.getUserById(parms.readInt("user")));
 			} else {
 				throw new RpcException(RpcException.Type.MISSING_VALUE, "service, resource, facility, member or user");
+			}
+		}
+	},
+
+	getRequiredAttributesAsHash {
+		@Override
+		public HashMap<User, List<Attribute>> call(ApiCaller ac, Deserializer parms) throws PerunException {
+			if(parms.contains("newWay")) {
+				return ac.getAttributesManager().getRequiredAttributes(ac.getSession(),
+					ac.getServiceById(parms.readInt("service")),
+					ac.getFacilityById(parms.readInt("facility")),
+					parms.readList("users", User.class), true);
+			} else {
+				return ac.getAttributesManager().getRequiredAttributes(ac.getSession(),
+					ac.getServiceById(parms.readInt("service")),
+					ac.getFacilityById(parms.readInt("facility")),
+					parms.readList("users", User.class));
 			}
 		}
 	},

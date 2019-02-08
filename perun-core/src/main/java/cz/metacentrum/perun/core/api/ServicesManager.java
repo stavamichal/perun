@@ -209,6 +209,22 @@ public interface ServicesManager {
 	ServiceAttributes getFlatData(PerunSession perunSession, Service service, Facility facility) throws InternalErrorException, FacilityNotExistsException, ServiceNotExistsException, PrivilegeException;
 
 	/**
+	 * Same as flatData without boolean parameter. This one just add the way how to choose working with IN clause for
+	 * Oracle.
+	 *
+	 * @param perunSession
+	 * @param service
+	 * @param facility
+	 * @param newWay if true, it will use new way of working with IN clause (just for oracle)
+	 * @return
+	 * @throws InternalErrorException
+	 * @throws FacilityNotExistsException
+	 * @throws ServiceNotExistsException
+	 * @throws PrivilegeException
+	 */
+	ServiceAttributes getFlatData(PerunSession perunSession, Service service, Facility facility, boolean newWay) throws InternalErrorException, FacilityNotExistsException, ServiceNotExistsException, PrivilegeException;
+
+	/**
 	 * Generates the list of attributes per each member associated with the resources and groups.
 	 *
 	 * @param perunSession

@@ -2180,6 +2180,21 @@ public interface AttributesManagerBl {
 	HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users) throws InternalErrorException;
 
 	/**
+	 * Get user-facility attributes which are required by the service for each user in list of users.
+	 * !!! Method checks if members list is not empty (returns empty HashMap)!!!
+	 *
+	 * @param sess perun session
+	 * @param service attribute required by this service
+	 * @param facility you get attributes for this facility and user
+	 * @param users you get attributes for this user and facility
+	 * @param newWay if true, it will use new way of working with IN clause (just for oracle)
+	 * @return map of user and his list of attributes
+	 *
+	 * @throws InternalErrorException if an exception raise in concrete implementation, the exception is wrapped in InternalErrorException
+	 */
+	HashMap<User, List<Attribute>> getRequiredAttributes(PerunSession sess, Service service, Facility facility, List<User> users, boolean newWay) throws InternalErrorException;
+
+	/**
 	 * Get user attributes which are required by the service for each user in list of users.
 	 * !!! Method checks if members list is not empty (returns empty HashMap)!!!
 	 *
