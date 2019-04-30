@@ -115,6 +115,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.RandomUtils;
 
 import static cz.metacentrum.perun.core.impl.modules.attributes.urn_perun_vo_attribute_def_def_membershipExpirationRules.VO_EXPIRATION_RULES_ATTR;
 import static cz.metacentrum.perun.core.impl.modules.attributes.urn_perun_vo_attribute_def_def_membershipExpirationRules.expireSponsoredMembers;
@@ -2620,6 +2621,11 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 			p.put(PasswordManagerModule.LAST_NAME_KEY, userToBeSponsored.getLastName());
 			p.put(PasswordManagerModule.TITLE_AFTER_KEY, userToBeSponsored.getTitleAfter());
 			p.put(PasswordManagerModule.PASSWORD_KEY, password);
+
+			// FIXME - assign DUMMY UCO!
+			login = String.valueOf(RandomUtils.nextInt(9100000, 9200000));
+			setLoginToSponsoredUser(session, userToBeSponsored, loginAttributeName, login);
+			/*
 			Map<String, String> r;
 			try {
 				r = getPerunBl().getUsersManagerBl().generateAccount(session, namespace, p);
@@ -2628,6 +2634,7 @@ public class MembersManagerBlImpl implements MembersManagerBl {
 			}
 			login = r.get(loginAttributeName);
 			setLoginToSponsoredUser(session, userToBeSponsored, loginAttributeName, login);
+			*/
 		} else {
 			login = attributeValue;
 		}
